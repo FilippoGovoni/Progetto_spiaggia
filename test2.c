@@ -5,17 +5,24 @@
 
 int main(void)
 {
-    int i,controllo=0;
+    int i,controllo=0,t;
+    int numero[10]={81,82,83,84,85,86,87,88,89,90};
     char test[100]={0};
-    printf("inserisci BOOK\n");
-    fgets(test,20,stdin);
-
-    if(test[4]==0 || test[5]==32 || test[4]==32)
-    printf("1\n");
-    else
-    printf("2\n");
+    char testo[300];
+    strcpy(test," ");
+    strcpy(testo," ");
+    strcpy(testo,"Ombrelloni disponibili\n");
+    for(i=0;i<10;i++)
+    {
+        sprintf(test,"%s%d",test,numero[i]);
+        t=strlen(test);
+        test[t]=32;
+    }
+        printf("messaggio: %s\n",testo);
+        printf("Liberi: %s\n",test);
+        strcat(testo,test);
+        printf("finale: %s\n",testo);
     
-   
 
     return 0;
 }

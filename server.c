@@ -26,16 +26,18 @@ typedef struct
 int main(int argc , char *argv[])
 {
 	int socket_desc,client_sock,c,read_size,flag=0,cont_ombrelloni=0,numero_richiesta;
-    int i=0,j,z=0,numero_richiesta1,controllo=3;
-    char A;
+    int i=0,j,z=0,numero_richiesta1,controllo=3,conta_liberi=0,t=0;
+    int ombr_disponibili[10]={0};
+    char A[2],B[2];
 	struct sockaddr_in server , client;
     FILE* statospiaggia;
-	char client_message[2000];
-    char BOOK[5];
-    char CANCEL[7];
-    char AVAILABLE[10];
-    chat data[15];
-    Ombrellone SPIAGGIA[90];
+	char client_message[100][2000];
+    char BOOK[5]={0};
+    char CANCEL[7]={0};
+    char AVAILABLE[10]={0};
+    char data[15];
+    char Liberi[100]={0};
+    Ombrellone ombrellone[9];
 
     
     //lettura dati iniziali spiggia
@@ -47,7 +49,7 @@ int main(int argc , char *argv[])
     }
     while(!feof(statospiaggia))
     {
-        fscanf(statospiaggia,"%d %d %d %s %s",&SPIAGGIA[i].numero,&SPIAGGIA[i].riga,&SPIAGGIA[i].stato,SPIAGGIA[i].datainizio,SPIAGGIA[i].datafine);
+        fscanf(statospiaggia,"%d %d %d %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].datainizio,ombrellone[i].datafine);
         i++;
     }
 
@@ -79,7 +81,7 @@ int main(int argc , char *argv[])
 	listen(socket_desc , 3);
 	
 	//Attesa di connessioni
-	puts("In attesa di connesioni...");
+	puts("In attesa di connessioni...");
 	c = sizeof(struct sockaddr_in);
 	
 	//accept
@@ -93,7 +95,7 @@ int main(int argc , char *argv[])
 	
 	//Riceve il primo messaggio dal client
 
-	while( (read_size = recv(client_sock , client_message , 2000 , 0)) > 0 )
+	if( (read_size = recv(client_sock , client_message[i] , 2000 , 0)) > 0 )
 	{   
         //controllo sulla richiesta del client
         for(j=0;j<4;j++)
@@ -112,17 +114,12 @@ int main(int argc , char *argv[])
 		}
         AVAILABLE[9]='\0';
         
-        if(strcmp(test,"BOOK")==0)
-        {
-            controllo=0;
-        }
-        else
-        {
-            if(strcmp(test,"CANCEL")==0)
-            controllo=1;
-            else if(strcmp(test,"AVAILABLE")==0)
-            controllo=2;
-
+        if(strcmp(BOOK,"BOOK\0")==0)
+        controllo=0;
+        if(strcmp(CANCEL,"CANCEL\0")==0)
+        controllo=1;
+        if(strcmp(AVAILABLE,"AVAILABLE\0")==0)
+        controllo=2;
         }
         switch(controllo)
         {
@@ -135,7 +132,75 @@ int main(int argc , char *argv[])
 
             break;
             case 2: //AVAILABLE
-            
+            if(client_message[i][9]=='\n' || client_message[i][10]=='\n'|| client_message[i][11]==32)
+            {
+                for(t=0;t<90;t++)
+                {
+                    if(ombrellone[t].stato==0)
+                    {
+                        conta_liberi++;
+                    }
+                }
+                if(conta_liberi>0)
+                {   
+                    strcpy(client_message[i]," ");
+                    sprintf(Liberi,"%s%d",Liberi,conta_liberi);
+                    AVAILABLE[9]=32;
+                    strcpy(client_message[i],AVAILABLE);
+                    write(client_sock , client_message[i], strlen(client_message[i]));
+                    strcpy(client_message[i], " ");
+			        i++;
+                }
+                else
+                {
+                    strcpy(client_message[i],"NAVAILABLE\0");
+		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    strcpy(client_message[i], " ");
+			        i++;
+                }
+            }
+            else
+            {
+                j=0;
+                for(t=0;t<2;t++)
+                {
+                    A[t]= client_message[i][t+10];
+                    
+                }
+                numero_richiesta=atoi(A);
+                if(numero_richiesta>0 && numero_richiesta<=9)
+                {
+                    for(t=0;t<90;t++)
+                    {
+                        if(ombrellone[t].riga==numero_richiesta && ombrellone[t].stato==0)
+                        {
+                            ombr_disponibili[j]=ombrellone[t].numero;
+                            j++;
+                        }
+                    }
+                    strcpy(Liberi," ");
+                    strcpy(client_message[i]," ");
+                    strcpy(client_message[i],"Ombrelloni disponibili\n");
+                    for(j=0;j<10;j++)
+                    {
+                        sprintf(Liberi,"%s%d",Liberi,ombr_disponibili[j]);
+                        t=strlen(Liberi);
+                        Liberi[t]=32;
+                    }
+                    strcat(client_message[i],Liberi);
+		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    strcpy(client_message[i], " ");
+			        i++;
+                }
+                else
+                {
+                    strcpy(client_message[i],"La fila selezionata non esiste\nFINE");
+		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    strcpy(client_message[i], " ");
+			        i++;
+                }
+    
+            }
 
             break;
             default:
@@ -155,6 +220,6 @@ int main(int argc , char *argv[])
 	{
 		perror("ricezione fallita");
 	}
-	
+	close(socket_desc);
 	return 0;
 }

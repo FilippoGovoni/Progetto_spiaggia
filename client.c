@@ -7,7 +7,8 @@
 
 int main(int argc , char *argv[])
 {
-	int sock,s_lengt;
+	int sock,s_lengt,lunghezza_messaggio;
+	int i=0,j;
 	struct sockaddr_in server;
 	char message[1000][100];
 	
@@ -46,12 +47,19 @@ int main(int argc , char *argv[])
 			puts("ricezione messaggio fallita");
 			break;
 		}
-		
-		printf("server: %s \n",message[i]);
-		if(strcmp(message[i],"Prenotazione avvenuta con successo\0")==0 || strcmp(message[i],"Hai selezionato un ombrellone diverso\0")==0 || strcmp(message[i],"Prenotazione cancellata\0")==0)
+		lunghezza_messaggio=strlen(message[i]);
+		if(message[i][lunghezza_messaggio-5]=='\n' && message[i][lunghezza_messaggio-4]=='F')
 		{
-			printf("Conversazione terminata \n");
+			printf("Server: ");
+			for(j=0;j<(lunghezza_messaggio-4);j++)
+			{
+				printf("%c",message[i][j]);
+			}
 			break;
+		}
+		else
+		{
+			printf("Server: %s \n",message[i]);
 		}
 		i++;
 	}
