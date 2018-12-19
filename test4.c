@@ -42,14 +42,14 @@ int main(int argc , char *argv[])
 		//Send some data
 		if( send(sock , message[i], strlen(message[i]) , 0) < 0)
 		{
-			puts("Send failed");
+			puts("invio messaggio fallito");
 			return 1;
 		}
 		
 		//Receive a reply from the server
 		if( recv(sock , message[i] , 2000 , 0) < 0)
 		{
-			puts("recv failed");
+			puts("ricezione messaggio fallita");
 			break;
 		}
 		

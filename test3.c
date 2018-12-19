@@ -6,10 +6,11 @@
 
 int main(int argc , char *argv[])
 {	
-	int socket_desc , client_sock , c , read_size,A,numero=1,numero_richiesta,stato=0,numero_richiesta1;
+	int socket_desc,client_sock,c,read_size,numero=1,numero_richiesta,stato=0,numero_richiesta1;
 	int i=0,j,z=0;
     int flag=0,flagg=1;
 	struct sockaddr_in server , client;
+	char A;
 	char client_message[2000][100];
 	char BOOK[5];
 	char CANCEL[7];

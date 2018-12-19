@@ -9,9 +9,8 @@ int main(int argc , char *argv[])
 {
 	int sock,s_lengt;
 	struct sockaddr_in server;
-	char message[1000] , server_reply[2000];
+	char message[1000][100];
 	
-	//Create socket
 	sock = socket(AF_INET , SOCK_STREAM , 0);
 	if (sock == -1)
 	{
@@ -23,7 +22,6 @@ int main(int argc , char *argv[])
 	server.sin_family = AF_INET;
 	server.sin_port = htons( 8888 );
 
-	//Connect to remote server
 	if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
 	{
 		perror("Connessione fallita. Errore");
@@ -32,27 +30,30 @@ int main(int argc , char *argv[])
 	
 	puts("Connesso\n");
 	
-	//keep communicating with server
 	while(1)
-	{   
-        bzero(message,1000);
-		printf("Enter message : ");
-		fgets(message,2000,stdin);
+	{
+		printf("Inserisci richiesta : ");
+		fgets(message[i],25,stdin);
 		
-		//Send some data
-		if( send(sock , message , strlen(message) , 0) < 0)
+		if( send(sock , message[i], strlen(message[i]) , 0) < 0)
 		{
-			puts("Send failed");
+			puts("invio messaggio fallito");
 			return 1;
 		}
-		//Receive a reply from the server
-		if( recv(sock , message , 1000 , 0) < 0)
+		
+		if( recv(sock , message[i] , 2000 , 0) < 0)
 		{
-			puts("recv failed");
+			puts("ricezione messaggio fallita");
 			break;
 		}
-		printf("Server:\n");
-		printf("%s",message);                                                                                                                 
+		
+		printf("server: %s \n",message[i]);
+		if(strcmp(message[i],"Prenotazione avvenuta con successo\0")==0 || strcmp(message[i],"Hai selezionato un ombrellone diverso\0")==0 || strcmp(message[i],"Prenotazione cancellata\0")==0)
+		{
+			printf("Conversazione terminata \n");
+			break;
+		}
+		i++;
 	}
 	
 	close(sock);
