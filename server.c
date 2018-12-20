@@ -23,26 +23,27 @@ typedef struct
 
 
 
-int main(int argc , char *argv[])
+int main(void)
 {
-	int socket_desc,client_sock,c,read_size,flag=0,cont_ombrelloni=0,numero_richiesta;
+	int socket_desc,client_sock,c,read_size,flag=0,numero_richiesta;
     int i=0,j,z=0,numero_richiesta1,controllo=3,conta_liberi=0,t=0;
     int ombr_disponibili[10]={0};
-    char A[2],B[2];
+    char A[2];
 	struct sockaddr_in server , client;
     FILE* statospiaggia;
 	char client_message[100][2000];
     char BOOK[5]={0};
     char CANCEL[7]={0};
     char AVAILABLE[10]={0};
-    char data[15];
+    char data_inizio[15];
+    char data_fine[15];
     char Liberi[100]={0};
-    Ombrellone ombrellone[9];
+    Ombrellone ombrellone[90];
 
     
     //lettura dati iniziali spiggia
 
-    if((statospiaggia=fopen("stato_spiaggia.txt","r"))==NULL)
+    if((statospiaggia=fopen("stato_spiaggia.txt","rw"))==NULL)
     {
         printf("errore apertura file\n");
         exit(-1);
@@ -52,7 +53,8 @@ int main(int argc , char *argv[])
         fscanf(statospiaggia,"%d %d %d %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].datainizio,ombrellone[i].datafine);
         i++;
     }
-
+    printf("Inserisci la data di oggi\n");
+    fgets(data_inizio,15,stdin);
 
 
 	//Creazione socket
@@ -93,8 +95,7 @@ int main(int argc , char *argv[])
 	}
 	puts("Connessione OK");
 	
-	//Riceve il primo messaggio dal client
-
+	//Inizio conversazione
 	if( (read_size = recv(client_sock , client_message[i] , 2000 , 0)) > 0 )
 	{   
         //controllo sulla richiesta del client
@@ -124,8 +125,184 @@ int main(int argc , char *argv[])
         switch(controllo)
         {
             case 0://BOOK
+            for(t=0;t<90;t++)
+                {
+                    if(ombrellone[t].stato==0)
+                    {
+                        conta_liberi++;
+                    }
+                }
+            if(conta_liberi>0)//conta ombrelloni liberi
+            {
+               if(flag==0)//inserire semaforo per la sincronizzazione dei thread
+                {
+                    flag=1;
+				    strcpy(client_message[i],"Prenotazione disponibile\0");
+		            write(client_sock , client_message[i], strlen(client_message[i]));
+					i++;
+                    
+					if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
+                    {
+						for(j=0;j<4;j++)
+						{
+							BOOK[j]=client_message[i][j];
+						}
+						BOOK[4]='\0';
+						if(strcmp(BOOK,"BOOK\0")==0)
+						{
+							for(t=0;t<2;t++)
+                			{
+                    			A[t]= client_message[i][t+5];
+                    
+               				}
+                			numero_richiesta=atoi(A);
+							strcpy(client_message[i]," ");
+                        	if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>0 && numero_richiesta <=90) //if(ombrellone[numero_richiesta].stato==0)
+                        	{
+                            	ombrellone[numero_richiesta].stato=2;//ombrellone temporaneamente occupato
+                            	strcpy(client_message[i],"AVAILABLE\0");
+		                    	write(client_sock , client_message[i], strlen(client_message[i]));
+								i++;	
+                            	if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
+								{
+									for(j=0;j<4;j++)
+									{
+										BOOK[j]=client_message[i][j];
+									}
+									BOOK[4]='\0';
+									for(j=0;j<6;j++)
+									{
+										CANCEL[j]=client_message[i][j];
+									}
+									CANCEL[6]='\0';
+									if(strcmp(BOOK,"BOOK\0")==0)
+									{
 
-            break;
+										for(t=0;t<2;t++)
+                						{
+                    						A[t]= client_message[i][t+5];
+                    
+               							}
+                						numero_richiesta1=atoi(A);
+										strcpy(client_message[i]," ");
+										if(numero_richiesta==numero_richiesta1)
+										{
+                                            if(client_message[i][17]=='\n' || client_message[i][18]=='\n')
+                                            {
+                                                for(j=7;j<=17;j++)
+											    {
+												    data_fine[z]=client_message[i][j];
+												    z++;
+											    }
+											    data_fine[z]='\0';
+                                                ombrellone[numero_richiesta].stato=1;
+                                                strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
+                                                strcpy(ombrellone[numero_richiesta].datafine,data_fine);
+                                                printf("%s\n",ombrellone[numero_richiesta].datainizio);
+                                                printf("%s\n",ombrellone[numero_richiesta].datafine);
+                                                
+                                                //scrittura a file momentanea
+                                                for(t=0;t<90;t++)
+                                                fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
+											    
+											    strcpy(client_message[i], " ");
+                            				    strcpy(client_message[i],"Prenotazione avvenuta con successo\nFINE");
+		                    				    write(client_sock , client_message[i], strlen(client_message[i]));
+                           					    strcpy(client_message[i], " ");
+											    i++;
+                                            }
+                                            else
+                                            {
+                                                for(j=7;j<=17;j++)
+											    {
+												    data_inizio[z]=client_message[i][j];
+												    z++;
+											    }
+											    data_inizio[z]='\0';
+                                                z=0;
+                                                for(j=18;j<=28;j++)
+											    {
+												    data_fine[z]=client_message[i][j];
+												    z++;
+											    }
+                                                data_fine[z]='\0';
+                                                
+                                                strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
+                                                strcpy(ombrellone[numero_richiesta].datafine,data_fine);
+                                                printf("%s\n",ombrellone[numero_richiesta].datainizio);
+                                                printf("%s\n",ombrellone[numero_richiesta].datafine);
+                                                
+                                                //scrittura a file momentanea
+                                                for(t=0;t<90;t++)
+                                                fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
+											    
+											    strcpy(client_message[i], " ");
+                            				    strcpy(client_message[i],"Prenotazione avvenuta con successo\nFINE");
+		                    				    write(client_sock , client_message[i], strlen(client_message[i]));
+                           					    strcpy(client_message[i], " ");
+											    i++;
+
+                                            }
+											
+										}
+										else 
+										{
+											strcpy(client_message[i], " ");
+                            				strcpy(client_message[i],"Hai selezionato un ombrellone diverso\nFINE");
+		                    				write(client_sock , client_message[i], strlen(client_message[i]));
+                           					strcpy(client_message[i], " ");
+											i++;
+										}
+									}
+									else if(strcmp(CANCEL,"CANCEL\0")==0)
+									{
+										ombrellone[numero_richiesta].stato=0; //ombrellone libero
+										strcpy(client_message[i], " ");
+                            			strcpy(client_message[i],"Prenotazione cancellata\nFINE");
+		                    			write(client_sock , client_message[i], strlen(client_message[i]));
+                           				strcpy(client_message[i], " ");
+									}
+                        		}
+							}
+                        	else
+                       		{
+                            	strcpy(client_message[i], " ");
+                            	strcpy(client_message[i],"NAVAILABLE\nFINE");
+		                    	write(client_sock , client_message[i], strlen(client_message[i]));
+                           		strcpy(client_message[i], " ");
+                       		}	
+                    	}
+						else
+						{
+							strcpy(client_message[i], " ");
+                            strcpy(client_message[i],"Inserisci BOOK e il numero dell'ombrellone che vuoi prenotare\nFINE");
+		                    write(client_sock , client_message[i], strlen(client_message[i]));
+                           	strcpy(client_message[i], " ");
+						}
+					}
+					else
+					{
+						perror("errore ricezione messaggio\nFINE");
+					}
+				}
+                else
+                {
+                   	strcpy(client_message[i], "");
+                    strcpy(client_message[i],"NOK\nFINE");
+		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    strcpy(client_message[i], "");
+                    	//inserire ciclo con semaforo
+                } 
+        }	
+        else
+        {
+            strcpy(client_message[i], "");
+            strcpy(client_message[i],"NAVAILABLE\nFINE");
+		    write(client_sock , client_message[i], strlen(client_message[i]));
+            strcpy(client_message[i], "");
+        }
+
+             break;
             case 1://CANCEL
 
 
@@ -153,7 +330,7 @@ int main(int argc , char *argv[])
                 }
                 else
                 {
-                    strcpy(client_message[i],"NAVAILABLE\0");
+                    strcpy(client_message[i],"NAVAILABLE\nFINE");
 		            write(client_sock , client_message[i], strlen(client_message[i]));
                     strcpy(client_message[i], " ");
 			        i++;
@@ -204,7 +381,7 @@ int main(int argc , char *argv[])
 
             break;
             default:
-            strcpy(client_message[i],"L'opzione scelta non è disponibile\0");
+            strcpy(client_message[i],"L'opzione scelta non è disponibile\nFINE");
 		    write(client_sock , client_message[i], strlen(client_message[i]));
             strcpy(client_message[i], " ");
 			i++;
@@ -220,6 +397,7 @@ int main(int argc , char *argv[])
 	{
 		perror("ricezione fallita");
 	}
+    fclose(statospiaggia);
 	close(socket_desc);
 	return 0;
 }

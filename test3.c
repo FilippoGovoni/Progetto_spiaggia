@@ -7,7 +7,7 @@
 int main(int argc , char *argv[])
 {	
 	int socket_desc,client_sock,c,read_size,numero=1,numero_richiesta,stato=0,numero_richiesta1;
-	int i=0,j,z=0;
+	int i=0,j,z=0,t;
     int flag=0,flagg=1;
 	struct sockaddr_in server , client;
 	char A;
@@ -77,10 +77,14 @@ int main(int argc , char *argv[])
 						BOOK[4]='\0';
 						if(strcmp(BOOK,"BOOK\0")==0)
 						{
-							A= client_message[i][5];
-                        	numero_richiesta=A-'0';
+							for(t=0;t<2;t++)
+                			{
+                    			A[t]= client_message[i][t+5];
+                    
+               				}
+                			numero_richiesta=atoi(A);
 							strcpy(client_message[i]," ");
-                        	if(stato==0) //if(ombrellone[numero_richiesta].stato==0)
+                        	if(stato==0 && numero_richiesta>0 && numero_richiesta <=90) //if(ombrellone[numero_richiesta].stato==0)
                         	{
                             	stato=2;//ombrellone.stato=2
                             	strcpy(client_message[i],"AVAILABLE\0");
@@ -101,8 +105,12 @@ int main(int argc , char *argv[])
 									if(strcmp(BOOK,"BOOK\0")==0)
 									{
 
-										A= client_message[i][5];
-                        				numero_richiesta1=A-'0';
+										for(t=0;t<2;t++)
+                						{
+                    						A[t]= client_message[i][t+5];
+                    
+               							}
+                						numero_richiesta1=atoi(A);
 										strcpy(client_message[i]," ");
 										if(numero_richiesta==numero_richiesta1)
 										{

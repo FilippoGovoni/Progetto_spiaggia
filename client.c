@@ -5,7 +5,7 @@
 #include<unistd.h>
 
 
-int main(int argc , char *argv[])
+int main(void)
 {
 	int sock,s_lengt,lunghezza_messaggio;
 	int i=0,j;
