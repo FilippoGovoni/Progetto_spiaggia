@@ -205,11 +205,9 @@ int main(void)
                                                 for(t=0;t<90;t++)
                                                 fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
 											    
-											    strcpy(client_message[i], " ");
-                            				    strcpy(client_message[i],"Prenotazione avvenuta con successo\nFINE");
-		                    				    write(client_sock , client_message[i], strlen(client_message[i]));
-                           					    strcpy(client_message[i], " ");
-											    i++;
+											    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40);
+                           					   
+											   
                                             }
                                             else
                                             {
@@ -235,48 +233,40 @@ int main(void)
                                                 //scrittura a file momentanea
                                                 for(t=0;t<90;t++)
                                                 fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
-											    
-											    strcpy(client_message[i], " ");
-                            				    strcpy(client_message[i],"Prenotazione avvenuta con successo\nFINE");
-		                    				    write(client_sock , client_message[i], strlen(client_message[i]));
-                           					    strcpy(client_message[i], " ");
-											    i++;
+										
+		                    				    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40);
+											   
 
                                             }
 											
 										}
 										else 
 										{
-											strcpy(client_message[i], " ");
-                            				strcpy(client_message[i],"Hai selezionato un ombrellone diverso\nFINE");
-		                    				write(client_sock , client_message[i], strlen(client_message[i]));
+											
+		                    				write(client_sock ,"Hai selezionato un ombrellone diverso\nFINE",43);
                            					strcpy(client_message[i], " ");
-											i++;
+										
 										}
 									}
 									else if(strcmp(CANCEL,"CANCEL\0")==0)
 									{
 										ombrellone[numero_richiesta].stato=0; //ombrellone libero
-										strcpy(client_message[i], " ");
-                            			strcpy(client_message[i],"Prenotazione cancellata\nFINE");
-		                    			write(client_sock , client_message[i], strlen(client_message[i]));
+		                    			write(client_sock ,"Prenotazione cancellata\nFINE", 29);
                            				strcpy(client_message[i], " ");
 									}
                         		}
 							}
                         	else
                        		{
-                            	strcpy(client_message[i], " ");
-                            	strcpy(client_message[i],"NAVAILABLE\nFINE");
-		                    	write(client_sock , client_message[i], strlen(client_message[i]));
+    
+		                    	write(client_sock ,"NAVAILABLE\nFINE", 16);
                            		strcpy(client_message[i], " ");
                        		}	
                     	}
 						else
 						{
-							strcpy(client_message[i], " ");
-                            strcpy(client_message[i],"Inserisci BOOK e il numero dell'ombrellone che vuoi prenotare\nFINE");
-		                    write(client_sock , client_message[i], strlen(client_message[i]));
+					
+		                    write(client_sock ,"Inserisci BOOK e il numero dell'ombrellone che vuoi prenotare\nFINE", 67);
                            	strcpy(client_message[i], " ");
 						}
 					}
@@ -287,18 +277,16 @@ int main(void)
 				}
                 else
                 {
-                   	strcpy(client_message[i], "");
-                    strcpy(client_message[i],"NOK\nFINE");
-		            write(client_sock , client_message[i], strlen(client_message[i]));
+                   	
+		            write(client_sock ,"NOK\nFINE", 9);
                     strcpy(client_message[i], "");
                     	//inserire ciclo con semaforo
                 } 
         }	
         else
         {
-            strcpy(client_message[i], "");
-            strcpy(client_message[i],"NAVAILABLE\nFINE");
-		    write(client_sock , client_message[i], strlen(client_message[i]));
+            
+		    write(client_sock ,"NAVAILABLE\nFINE",16);
             strcpy(client_message[i], "");
         }
 
@@ -319,21 +307,23 @@ int main(void)
                     }
                 }
                 if(conta_liberi>0)
-                {   
+                {   	
+					i++;
                     strcpy(client_message[i]," ");
                     sprintf(Liberi,"%s%d",Liberi,conta_liberi);
-                    AVAILABLE[9]=32;
-                    strcpy(client_message[i],AVAILABLE);
+					strcpy(client_message[i],"AVAILABLE ");
+					strcat(client_message[i],Liberi);
+					strcat(client_message[i],"\nFINE");
                     write(client_sock , client_message[i], strlen(client_message[i]));
                     strcpy(client_message[i], " ");
 			        i++;
                 }
                 else
                 {
-                    strcpy(client_message[i],"NAVAILABLE\nFINE");
-		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    
+		            write(client_sock ,"NAVAILABLE\nFINE",16);
                     strcpy(client_message[i], " ");
-			        i++;
+			        
                 }
             }
             else
@@ -365,26 +355,27 @@ int main(void)
                         Liberi[t]=32;
                     }
                     strcat(client_message[i],Liberi);
+					strcat(client_message[i],"\nFINE");
 		            write(client_sock , client_message[i], strlen(client_message[i]));
                     strcpy(client_message[i], " ");
-			        i++;
+			       
                 }
                 else
                 {
-                    strcpy(client_message[i],"La fila selezionata non esiste\nFINE");
-		            write(client_sock , client_message[i], strlen(client_message[i]));
+                    
+		            write(client_sock ,"La fila selezionata non esiste\nFINE",36);
                     strcpy(client_message[i], " ");
-			        i++;
+			        
                 }
     
             }
 
             break;
             default:
-            strcpy(client_message[i],"L'opzione scelta non è disponibile\nFINE");
-		    write(client_sock , client_message[i], strlen(client_message[i]));
+            
+		    write(client_sock ,"L'opzione scelta non è disponibile\nFINE",41);
             strcpy(client_message[i], " ");
-			i++;
+			
             break;
         }
 	
