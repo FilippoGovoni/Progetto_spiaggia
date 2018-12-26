@@ -35,15 +35,15 @@ int main(void)
     char BOOK[5]={0};
     char CANCEL[7]={0};
     char AVAILABLE[10]={0};
-    char data_inizio[15];
-    char data_fine[15];
+    char data_inizio[20]={0};
+    char data_fine[20]={0};
     char Liberi[100]={0};
     Ombrellone ombrellone[90];
 
     
     //lettura dati iniziali spiggia
 
-    if((statospiaggia=fopen("stato_spiaggia.txt","rw"))==NULL)
+    if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
     {
         printf("errore apertura file\n");
         exit(-1);
@@ -55,7 +55,17 @@ int main(void)
     }
     printf("Inserisci la data di oggi\n");
     fgets(data_inizio,15,stdin);
+    t=strlen(data_inizio);
+    data_inizio[t-1]='\0';
 
+    //controllo stato ombrellone
+    for(t=0;t<90;t++)
+    {
+        if(strcmp(ombrellone[t].datainizio,data_inizio)==0)
+        {
+            ombrellone[t].stato=1;
+        }
+    }
 
 	//Creazione socket
 
@@ -156,6 +166,7 @@ int main(void)
                     
                				}
                 			numero_richiesta=atoi(A);
+                            numero_richiesta--;
 							strcpy(client_message[i]," ");
                         	if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>0 && numero_richiesta <=90) //if(ombrellone[numero_richiesta].stato==0)
                         	{
@@ -184,53 +195,47 @@ int main(void)
                     
                							}
                 						numero_richiesta1=atoi(A);
-										strcpy(client_message[i]," ");
+                                        numero_richiesta1--;
+										strcpy(client_message[i], " ");
 										if(numero_richiesta==numero_richiesta1)
 										{
                                             if(client_message[i][17]=='\n' || client_message[i][18]=='\n')
                                             {
-                                                for(j=7;j<=17;j++)
+                                                for(j=8;j<=17;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
 											    }
-											    data_fine[z]='\0';
                                                 ombrellone[numero_richiesta].stato=1;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
-                                                printf("%s\n",ombrellone[numero_richiesta].datainizio);
-                                                printf("%s\n",ombrellone[numero_richiesta].datafine);
                                                 
                                                 //scrittura a file momentanea
+                                                rewind(statospiaggia);
                                                 for(t=0;t<90;t++)
                                                 fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
 											    
-											    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40);
-                           					   
-											   
+											    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40); 
                                             }
                                             else
                                             {
-                                                for(j=7;j<=17;j++)
+                                                for(j=8;j<=17;j++)
 											    {
 												    data_inizio[z]=client_message[i][j];
 												    z++;
 											    }
-											    data_inizio[z]='\0';
                                                 z=0;
-                                                for(j=18;j<=28;j++)
+                                                for(j=19;j<=28;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
-											    }
-                                                data_fine[z]='\0';
-                                                
+											    } 
+                                                ombrellone[numero_richiesta].stato=0;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
-                                                printf("%s\n",ombrellone[numero_richiesta].datainizio);
-                                                printf("%s\n",ombrellone[numero_richiesta].datafine);
                                                 
                                                 //scrittura a file momentanea
+                                                rewind(statospiaggia);
                                                 for(t=0;t<90;t++)
                                                 fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
 										
@@ -335,7 +340,8 @@ int main(void)
                     
                 }
                 numero_richiesta=atoi(A);
-                if(numero_richiesta>0 && numero_richiesta<=9)
+                numero_richiesta--;
+                if(numero_richiesta>0 && numero_richiesta<=90)
                 {
                     for(t=0;t<90;t++)
                     {

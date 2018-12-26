@@ -32,7 +32,7 @@ int main(void)
     for(i=0;i<90;i++)
     printf("ombrellone %d,%d,%d,%s,%s\n",O[i].numero,O[i].riga,O[i].stato,O[i].datainizio,O[i].datafine);
     O[1].stato=1;    
-
+    rewind(st);
     for(i=0;i<90;i++)
     fprintf(st,"%d %d %d %s %s\n",O[i].numero,O[i].riga,O[i].stato,O[i].datainizio,O[i].datafine);
     

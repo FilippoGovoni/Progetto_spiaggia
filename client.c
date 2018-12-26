@@ -10,7 +10,7 @@ int main(void)
 	int sock,s_lengt,lunghezza_messaggio;
 	int i=0,j;
 	struct sockaddr_in server;
-	char message[1000][100];
+	char message[100][1000];
 	
 	sock = socket(AF_INET , SOCK_STREAM , 0);
 	if (sock == -1)
@@ -34,7 +34,7 @@ int main(void)
 	while(1)
 	{
 		printf("Inserisci richiesta : ");
-		fgets(message[i],25,stdin);
+		fgets(message[i],40,stdin);
 		
 		if( send(sock , message[i], strlen(message[i]) , 0) < 0)
 		{
