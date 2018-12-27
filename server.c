@@ -4,12 +4,17 @@
 #include<sys/socket.h>
 #include<arpa/inet.h>	//inet_addr
 #include<unistd.h>	//write
+#include<time.h>
 
 
 #define Numero_Ombrelloni 90
 #define Numero_righe 9
 #define Numero_colonne 10
 
+int generaNumeri()
+{
+    return rand() % 10;
+}
 
 typedef struct
 {
@@ -17,16 +22,16 @@ typedef struct
     int riga;
     int colonna;
     int stato;   //0:libero 1:occupato 2:temporaneamente occupato
+    char codice[6];
     char datainizio[20]; 
     char datafine[20];
 }Ombrellone;
 
 
-
 int main(void)
 {
 	int socket_desc,client_sock,c,read_size,flag=0,numero_richiesta;
-    int i=0,j,z=0,numero_richiesta1,controllo=3,conta_liberi=0,t=0;
+    int i=0,j,z=0,numero_richiesta1,controllo=3,conta_liberi=0,t=0,codnum=0;
     int ombr_disponibili[10]={0};
     char A[2];
 	struct sockaddr_in server , client;
@@ -37,10 +42,13 @@ int main(void)
     char AVAILABLE[10]={0};
     char data_inizio[20]={0};
     char data_fine[20]={0};
+    char cod[6];
     char Liberi[100]={0};
     Ombrellone ombrellone[90];
+    time_t temp;
 
-    
+    srand((unsigned) time(&temp));
+
     //lettura dati iniziali spiggia
 
     if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
@@ -50,7 +58,7 @@ int main(void)
     }
     while(!feof(statospiaggia))
     {
-        fscanf(statospiaggia,"%d %d %d %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].datainizio,ombrellone[i].datafine);
+        fscanf(statospiaggia,"%d %d %d %s %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].codice,ombrellone[i].datainizio,ombrellone[i].datafine);
         i++;
     }
     printf("Inserisci la data di oggi\n");
@@ -58,12 +66,20 @@ int main(void)
     t=strlen(data_inizio);
     data_inizio[t-1]='\0';
 
-    //controllo stato ombrellone
+    //controllo stato ombrellone inizio
     for(t=0;t<90;t++)
     {
         if(strcmp(ombrellone[t].datainizio,data_inizio)==0)
         {
             ombrellone[t].stato=1;
+        }
+    }
+     //controllo stato ombrellone fine
+    for(t=0;t<90;t++)
+    {
+        if(strcmp(ombrellone[t].datafine,data_inizio)==0)
+        {
+            ombrellone[t].stato=0;
         }
     }
 
@@ -201,7 +217,7 @@ int main(void)
 										{
                                             if(client_message[i][17]=='\n' || client_message[i][18]=='\n')
                                             {
-                                                for(j=8;j<=17;j++)
+                                                for(j=7;j<=16;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
@@ -209,13 +225,22 @@ int main(void)
                                                 ombrellone[numero_richiesta].stato=1;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
-                                                
+                                                //generazione codice di cancellazione
+                                                for(t=0;t<5;t++)
+                                                {
+                                                    codnum=generaNumeri();
+                                                    cod[t]=codnum+'0';
+                                                }
+                                                strcpy(ombrellone[numero_richiesta].codice,cod);
+                                                strcpy(client_message[i],"Prenotazione avvenuta con successo\n il tuo codice di cancellazione è:  ");
+                                                strcat(client_message[i],cod);
+                                                strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
                                                 rewind(statospiaggia);
                                                 for(t=0;t<90;t++)
-                                                fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
+                                                fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
 											    
-											    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40); 
+											    write(client_sock ,client_message[i], strlen(client_message[i])); 
                                             }
                                             else
                                             {
@@ -233,13 +258,22 @@ int main(void)
                                                 ombrellone[numero_richiesta].stato=0;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
-                                                
+                                                //generazione codice
+                                                for(t=0;t<5;t++)
+                                                {
+                                                    codnum=generaNumeri();
+                                                    cod[t]=codnum+'0';
+                                                }
+                                                strcpy(ombrellone[numero_richiesta].codice,cod);
+                                                strcpy(client_message[i],"Prenotazione avvenuta con successo\n il tuo codice di cancellazione è:  ");
+                                                strcat(client_message[i],cod);
+                                                strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
                                                 rewind(statospiaggia);
                                                 for(t=0;t<90;t++)
-                                                fprintf(statospiaggia,"%d %d %d %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].datainizio,ombrellone[t].datafine);
+                                                fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
 										
-		                    				    write(client_sock , "Prenotazione avvenuta con successo\nFINE", 40);
+		                    				    write(client_sock , client_message[i],strlen(client_message[i]));
 											   
 
                                             }
@@ -292,13 +326,43 @@ int main(void)
         {
             
 		    write(client_sock ,"NAVAILABLE\nFINE",16);
-            strcpy(client_message[i], "");
+            
         }
 
              break;
             case 1://CANCEL
-
-
+            for(t=0;t<2;t++)
+                {
+                    A[t]= client_message[i][t+7];
+                    
+                }
+                numero_richiesta=atoi(A);
+                numero_richiesta--;
+                if(ombrellone[numero_richiesta].stato==0 || ombrellone[numero_richiesta].stato==2 )
+                {
+                    write(client_sock ,"L'ombrellone non può essere disdetto\nFINE",43);
+                }
+                else
+                {
+                    write(client_sock ,"Inserisci il codice per disdire la prenotazione\n",43);
+                    if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
+                    {
+                        for(j=0;j<5;j++)
+                        {
+                            cod[j]=client_message[i][j];
+                        }
+                        if((strcmp(ombrellone[numero_richiesta].codice,cod))==0)
+                        {
+                            ombrellone[numero_richiesta].stato=0;
+                            write(client_sock ,"CANCEL OK\nFINE",15);
+                        }
+                        else
+                        {
+                            write(client_sock ,"Codice errato\nFINE",19);
+                        }
+                    
+                    }
+                }
 
             break;
             case 2: //AVAILABLE
