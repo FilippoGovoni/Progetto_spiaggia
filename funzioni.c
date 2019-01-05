@@ -1,5 +1,10 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>	//strlen
+#include<sys/socket.h>
+#include<arpa/inet.h>	//inet_addr
+#include<unistd.h>	//write
+#include<time.h>
 #include"funzioni.h"
 
 
@@ -8,11 +13,10 @@ int generaNumeri()
     return rand() % 10;
 }
 
-void func_BOOK(int client_sock,FILE *statospiaggia,Ombrellone *ombrellone)
+void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggia,Ombrellone *ombrellone)
 {
     char A[2];
-    int i=0,j,z=0,t=0,flag=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
-    char client_message[1000][1000];
+    int i=2,j,z=0,t=0,flag=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
     char BOOK[5]={0};
     char AVAILABLE[10]={0};
     char CANCEL[7]={0};
@@ -92,6 +96,7 @@ void func_BOOK(int client_sock,FILE *statospiaggia,Ombrellone *ombrellone)
                                                 ombrellone[numero_richiesta].stato=1;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
+                                                i++;
                                                 //generazione codice di cancellazione
                                                 for(t=0;t<5;t++)
                                                 {
@@ -107,7 +112,8 @@ void func_BOOK(int client_sock,FILE *statospiaggia,Ombrellone *ombrellone)
                                                 for(t=0;t<90;t++)
                                                 fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
 											    
-											    write(client_sock ,client_message[i], strlen(client_message[i])); 
+											    write(client_sock ,client_message[i], strlen(client_message[i]));
+                                                i++;
                                             }
                                             else
                                             {
@@ -141,8 +147,6 @@ void func_BOOK(int client_sock,FILE *statospiaggia,Ombrellone *ombrellone)
                                                 fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
 										
 		                    				    write(client_sock , client_message[i],strlen(client_message[i]));
-											   
-
                                             }
 											
 										}
@@ -320,4 +324,66 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
     
             }
 
+}
+
+int confrontaDate(char datain1[],char datafin1[],char datain2[],char datafin2[])
+{
+    int i=0,z=0;
+    periodo A,B;
+    int ANNO,MESE,GIORNO;
+    for(i=0;i<2;i++)
+    {
+        A.giornoinizio[z]=datain1[i];
+        A.giornofine[z]=datafin1[i];
+        B.giornoinizio[z]=datain2[i];
+        B.giornofine[z]=datafin2[i];
+        z++;
+    }
+    z=0;
+    for(i=3;i<5;i++)
+    {
+        A.meseinizio[z]=datain1[i];
+        A.mesefine[z]=datafin1[i];
+        B.meseinizio[z]=datain2[i];
+        B.mesefine[z]=datafin2[i];
+        z++;
+    }
+    z=0;
+    for(i=7;i<=10;i++)
+    {
+        A.annoinizio[z]=datain1[i];
+        A.annofine[z]=datafin1[i];
+        B.annoinizio[z]=datain2[i];
+        B.annofine[z]=datafin2[i];
+        z++;
+    }
+    A.ai=atoi(A.annoinizio);
+    A.af=atoi(A.annofine);
+    B.ai=atoi(B.annoinizio);
+    B.af=atoi(B.annofine);
+    A.mi=atoi(A.meseinizio);
+    A.mf=atoi(A.mesefine);
+    B.mi=atoi(B.meseinizio);
+    B.mf=atoi(B.mesefine);
+    A.gi=atoi(A.giornoinizio);
+    A.gf=atoi(A.giornofine);
+    B.gi=atoi(B.giornoinizio);
+    B.gf=atoi(B.giornofine);
+
+    if((B.ai>=A.ai && B.ai <= A.af) && (B.af>=A.ai && B.af<=A.af))
+    {
+        if((B.mi>=A.mi && B.mi<=A.mf) && (B.mf <=A.mf && B.mf>= A.mi))
+        {
+            if((B.gi>=A.gi && B.gi<=A.gf) && (B.gf<=A.gf && B.gf >=A.gi))
+            {
+                return 0;
+            }
+            else
+            return 1;
+        }
+        else
+        return 1;
+    }
+    else
+    return 1;   
 }
