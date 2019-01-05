@@ -13,7 +13,7 @@ typedef struct
 
 int main(void)
 {
-    Ombrellone O[200];
+    Ombrellone O[300];
     int i;
     FILE *F;
 
@@ -22,14 +22,14 @@ int main(void)
         printf("errore apertura file\n");
         exit(-1);
     }   
-    for(i=0;i<500;i++)
+    for(i=0;i<300;i++)
     {
         O[i].numero=0;
         strcpy(O[i].codice,"00000");
         strcpy(O[i].datainizio,"00/00/0000");
         strcpy(O[i].datafine,"00/00/0000");
     }
-    for(i=0;i<500;i++)
+    for(i=0;i<300;i++)
         {
             fprintf(F,"%d %s %s %s\n",O[i].numero,O[i].codice,O[i].datainizio,O[i].datafine);
         }
