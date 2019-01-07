@@ -8,9 +8,12 @@
 #include<pthread.h>
 #include"funzioni.h"
 
+pthread_t writer;
 pthread_t cliente;
+pthread_mutex_t semaphore;
 
 void *gestore_client(void*);
+void *filewriter(void*);
 
 #define Numero_Ombrelloni 90
 #define Numero_righe 9
@@ -25,7 +28,6 @@ int main(void)
 	char client_message[100][2000];
     char data_inizio[20]={0};
     parametri dato;
-    pthread_t cliente;
     time_t temp;
 
     srand((unsigned) time(&temp));
@@ -46,6 +48,7 @@ int main(void)
     fgets(data_inizio,15,stdin);
     t=strlen(data_inizio);
     data_inizio[t-1]='\0';
+    strcpy(dato.Data,data_inizio);
 
     //controllo stato ombrellone inizio
     for(t=0;t<90;t++)
@@ -63,8 +66,12 @@ int main(void)
             dato.ombrellone[t].stato=0;
         }
     }
-    dato.f=statospiaggia;
-
+    // Creazione thread per la gestione dei file
+    if(pthread_create(&writer,NULL,filewriter,(void*)&dato)<0)
+       {
+           perror("errore creazione thread");
+           return 2;
+       }
 	//Creazione socket
 
 	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -93,7 +100,7 @@ int main(void)
 	//Attesa di connessioni
 	puts("In attesa di connessioni...");
 	c = sizeof(struct sockaddr_in);
-	
+	fclose(statospiaggia);
 	//accept
 	while(client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))
     {
@@ -102,11 +109,10 @@ int main(void)
        if(pthread_create(&cliente,NULL,gestore_client,(void*)&dato)<0)
        {
            perror("errore creazione thread");
-           return 2;
+           return -1;
        }
 
     }
-    fclose(statospiaggia);
 	close(socket_desc);
 	return 0;
 }
@@ -115,11 +121,21 @@ void *gestore_client(void *dato)
 {
     parametri dati= *(parametri*)dato;
     int i=0,j,controllo=3,read_size;
-    FILE* statospiaggia;
+    FILE *statospiaggia;
     char BOOK[5]={0};
     char CANCEL[7]={0};
     char AVAILABLE[10]={0};
     char client_message[100][2000];
+    if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
+    {
+        printf("errore apertura file\n");
+        exit(-1);
+    }
+    while(!feof(statospiaggia))
+    {
+        fscanf(statospiaggia,"%d %d %d %s %s %s",&dati.ombrellone[i].numero,&dati.ombrellone[i].riga,&dati.ombrellone[i].stato,dati.ombrellone[i].codice,dati.ombrellone[i].datainizio,dati.ombrellone[i].datafine);
+        i++;
+    }
     
     //Inizio conversazione
 	if( (read_size = recv(dati.sock,client_message[i],2000,0))>0)
@@ -150,7 +166,7 @@ void *gestore_client(void *dato)
         switch(controllo)
         {
             case 0://BOOK
-            func_BOOK(dati.sock,client_message,dati.f,dati.ombrellone);
+            func_BOOK(dati.sock,dati.ombrellone,dati.Data);
             break;
             case 1://CANCEL
             func_CANCEL(dati.sock,client_message[i],dati.ombrellone);
@@ -160,12 +176,11 @@ void *gestore_client(void *dato)
             break;
 
             default:
-		    write(dati.sock ,"L'opzione scelta non è disponibile\nFINE",41);
-            strcpy(client_message[i], " ");
+		    write(dati.sock ,"L'opzione scelta non è disponibile\nFINE",36);
 			
             break;
         }
-    }
+    }  
         if(read_size == 0)
 	{
 		puts("Il client si è disconnesso");
@@ -175,5 +190,69 @@ void *gestore_client(void *dato)
 	{
 		perror("ricezione fallita");
 	}
+    if(close(dati.sock)<0)
+    perror("errore chiusura socket\n");
 
+    pthread_exit(NULL);
+    fclose(statospiaggia);
+}
+
+void *filewriter(void *dato)
+{
+    parametri dati=*(parametri*)dato;
+    int i,t;
+    FILE* statospiaggia;
+    FILE* modifiche;
+    Ombrellone prova;
+
+    if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
+    {
+        printf("errore apertura file\n");
+        exit(-1);
+    }
+    while(1)
+    {
+        sleep(45);
+        if((modifiche=fopen("aggiornamenti.txt","r"))==NULL)
+        {
+            printf("errore apertura file\n");
+            exit(-1);
+        }
+        while(!feof(statospiaggia))
+        {
+            fscanf(statospiaggia,"%d %d %d %s %s %s",&dati.ombrellone[i].numero,&dati.ombrellone[i].riga,&dati.ombrellone[i].stato,dati.ombrellone[i].codice,dati.ombrellone[i].datainizio,dati.ombrellone[i].datafine);
+            i++;
+        }
+        while(!feof(modifiche))
+        {
+            fscanf(modifiche,"%d %d %d %s %s %s",&prova.numero,&prova.riga,&prova.stato,prova.codice,prova.datainizio,prova.datafine);
+            for(i=0;i<90;i++)
+            {
+                if(prova.numero==0)
+                {
+                    break;
+                }
+                if(prova.numero== dati.ombrellone[i].numero)
+                {
+                    dati.ombrellone[i].stato=prova.stato;
+                    strcpy(dati.ombrellone[i].codice,prova.codice);
+                    strcpy(dati.ombrellone[i].datainizio,prova.datainizio);
+                    strcpy(dati.ombrellone[i].datafine,prova.datafine);
+                }
+            }
+        }
+        fclose(modifiche);
+        if((modifiche=fopen("aggiornamenti.txt","w"))==NULL)
+        {
+            printf("errore apertura file\n");
+            exit(-1);
+        }
+        fclose(modifiche);
+        rewind(statospiaggia);
+        for(t=0;t<90;t++)
+        fprintf(statospiaggia,"%d %d %d %s %s %s\n",dati.ombrellone[t].numero,dati.ombrellone[t].riga,dati.ombrellone[t].stato,dati.ombrellone[t].codice,dati.ombrellone[t].datainizio,dati.ombrellone[t].datafine);
+											    
+    }
+
+    
 }

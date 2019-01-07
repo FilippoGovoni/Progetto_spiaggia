@@ -13,16 +13,22 @@ int generaNumeri()
     return rand() % 10;
 }
 
-void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggia,Ombrellone *ombrellone)
+void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
 {
     char A[2];
-    int i=2,j,z=0,t=0,flag=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
+    int i=0,j,z=0,t=0,flag=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
+    FILE* modifiche;
+    if((modifiche=fopen("aggiornamenti.txt","a"))==NULL)
+        {
+            printf("errore apertura file\n");
+            exit(-1);
+        }
+    char client_message[100][2000];
     char BOOK[5]={0};
     char AVAILABLE[10]={0};
     char CANCEL[7]={0};
-    char cod[5];
+    char Codice[6]={0};
     char data_fine[20]={0};
-    char data_inizio[20]={0};
     for(t=0;t<90;t++)
                 {
                     if(ombrellone[t].stato==0)
@@ -37,7 +43,8 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
                     flag=1;
 				    strcpy(client_message[i],"Prenotazione disponibile\0");
 		            write(client_sock , client_message[i], strlen(client_message[i]));
-					i++;
+					strcpy(client_message[i]," ");
+                    i++;
 					if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
                     {
 						for(j=0;j<4;j++)
@@ -55,6 +62,7 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
                 			numero_richiesta=atoi(A);
                             numero_richiesta--;
 							strcpy(client_message[i]," ");
+                            i++;
                         	if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>=-0 && numero_richiesta <=90) //if(ombrellone[numero_richiesta].stato==0)
                         	{
                             	ombrellone[numero_richiesta].stato=2;//ombrellone temporaneamente occupato
@@ -83,16 +91,16 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
                							}
                 						numero_richiesta1=atoi(A);
                                         numero_richiesta1--;
-										strcpy(client_message[i], " ");
 										if(numero_richiesta==numero_richiesta1)
 										{
                                             if(client_message[i][17]=='\n' || client_message[i][18]=='\n')
                                             {
-                                                for(j=7;j<=16;j++)
+                                                for(j=8;j<=18;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
 											    }
+                                                data_fine[18]='\0';
                                                 ombrellone[numero_richiesta].stato=1;
                                                 strcpy(ombrellone[numero_richiesta].datainizio,data_inizio);
                                                 strcpy(ombrellone[numero_richiesta].datafine,data_fine);
@@ -101,16 +109,17 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
                                                 for(t=0;t<5;t++)
                                                 {
                                                     codnum=generaNumeri();
-                                                    cod[t]=codnum+'0';
+                                                    Codice[t]=codnum+'0';
                                                 }
-                                                strcpy(ombrellone[numero_richiesta].codice,cod);
+                                                Codice[5]='\0';
+                                                i++;
+                                                strcpy(ombrellone[numero_richiesta].codice,Codice);
                                                 strcpy(client_message[i],"Prenotazione avvenuta con successo\n il tuo codice di cancellazione è:  ");
-                                                strcat(client_message[i],cod);
+                                                strcat(client_message[i],Codice);
                                                 strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
-                                                rewind(statospiaggia);
-                                                for(t=0;t<90;t++)
-                                                fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
+                                                //rewind(modifiche);
+                                                fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 											    
 											    write(client_sock ,client_message[i], strlen(client_message[i]));
                                                 i++;
@@ -135,16 +144,15 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
                                                 for(t=0;t<5;t++)
                                                 {
                                                     codnum=generaNumeri();
-                                                    cod[t]=codnum+'0';
+                                                    Codice[t]=codnum+'0';
                                                 }
-                                                strcpy(ombrellone[numero_richiesta].codice,cod);
+                                                strcpy(ombrellone[numero_richiesta].codice,Codice);
                                                 strcpy(client_message[i],"Prenotazione avvenuta con successo\n il tuo codice di cancellazione è:  ");
-                                                strcat(client_message[i],cod);
+                                                strcat(client_message[i],Codice);
                                                 strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
-                                                rewind(statospiaggia);
-                                                for(t=0;t<90;t++)
-                                                fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
+                                                //rewind(modifiche);
+                                                fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 										
 		                    				    write(client_sock , client_message[i],strlen(client_message[i]));
                                             }
@@ -195,60 +203,66 @@ void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggi
 		    write(client_sock ,"NAVAILABLE\nFINE",16);
             
         }
-
+    fclose(modifiche);
 }
 
 void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
 {
     char A[2];
     char cod[6];
+    FILE* modifiche;
     char client_message[100][2000];
     int numero_richiesta,t,i=0,j,read_size;
+    if((modifiche=fopen("aggiornamenti.txt","a"))==NULL)
+        {
+            printf("errore apertura file\n");
+            exit(-1);
+        }
     for(t=0;t<2;t++)
-                {
-                    A[t]= richiesta[t+7];
+        {
+            A[t]= richiesta[t+7];
                     
-                }
-                numero_richiesta=atoi(A);
-                numero_richiesta--;
-                if(ombrellone[numero_richiesta].stato==0 || ombrellone[numero_richiesta].stato==2 )
+        }
+        numero_richiesta=atoi(A);
+        numero_richiesta--;
+        if(ombrellone[numero_richiesta].stato==0 || ombrellone[numero_richiesta].stato==2 )
+        {
+            write(client_sock ,"L'ombrellone non può essere disdetto\nFINE",43);
+        }
+        else
+        {
+            write(client_sock ,"Inserisci il codice per disdire la prenotazione\n",49);
+            if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
+            {
+                for(j=0;j<5;j++)
                 {
-                    write(client_sock ,"L'ombrellone non può essere disdetto\nFINE",43);
+                    cod[j]=client_message[i][j];
+                }
+                if((strcmp(ombrellone[numero_richiesta].codice,cod))==0)
+                {
+                    ombrellone[numero_richiesta].stato=0;
+                    write(client_sock ,"CANCEL OK\nFINE",15);
+                    fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
                 }
                 else
                 {
-                    write(client_sock ,"Inserisci il codice per disdire la prenotazione\n",43);
-                    if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
-                    {
-                        for(j=0;j<5;j++)
-                        {
-                            cod[j]=client_message[i][j];
-                        }
-                        if((strcmp(ombrellone[numero_richiesta].codice,cod))==0)
-                        {
-                            ombrellone[numero_richiesta].stato=0;
-                            write(client_sock ,"CANCEL OK\nFINE",15);
-                        }
-                        else
-                        {
-                            write(client_sock ,"Codice errato\nFINE",19);
-                        }
-                    
-                    }
+                    write(client_sock ,"Codice errato\nFINE",19);
                 }
+                    
+                }
+        }
 
 }
 
 
 void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
 {
-    int i=0,j,numero_richiesta;
+    int i=0,j,z,numero_richiesta;
     int conta_liberi=0,t;
     char A[2];
     char Liberi[100]={0};
     char client_message[100][2000];
     int ombr_disponibili[10]={0};
-
 
     if(richiesta[9]=='\n' || richiesta[10]=='\n'|| richiesta[11]==32)
             {
@@ -260,8 +274,7 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                     }
                 }
                 if(conta_liberi>0)
-                {   	
-					i++;
+                { 
                     strcpy(client_message[i]," ");
                     sprintf(Liberi,"%s%d",Liberi,conta_liberi);
 					strcpy(client_message[i],"AVAILABLE ");
@@ -284,11 +297,10 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                 j=0;
                 for(t=0;t<2;t++)
                 {
-                    A[t]= client_message[i][t+10];
+                    A[t]= richiesta[t+10];
                     
                 }
                 numero_richiesta=atoi(A);
-                numero_richiesta--;
                 if(numero_richiesta>0 && numero_richiesta<=90)
                 {
                     for(t=0;t<90;t++)
@@ -302,9 +314,9 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                     strcpy(Liberi," ");
                     strcpy(client_message[i]," ");
                     strcpy(client_message[i],"Ombrelloni disponibili\n");
-                    for(j=0;j<10;j++)
+                    for(z=0;z<j;z++)
                     {
-                        sprintf(Liberi,"%s%d",Liberi,ombr_disponibili[j]);
+                        sprintf(Liberi,"%s%d",Liberi,ombr_disponibili[z]);
                         t=strlen(Liberi);
                         Liberi[t]=32;
                     }

@@ -28,9 +28,8 @@ int main(void)
 		perror("Connessione fallita. Errore");
 		return 1;
 	}
-	
 	puts("Connesso\n");
-	
+
 	while(1)
 	{
 		printf("Inserisci richiesta : ");

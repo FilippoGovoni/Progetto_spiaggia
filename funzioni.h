@@ -28,12 +28,12 @@ typedef struct
 
 typedef struct
 {
-    FILE* f;
+    char Data[20];
     int sock;
     Ombrellone ombrellone[90];
 }parametri;
 
-void func_BOOK(int client_sock,char client_message[100][2000],FILE *statospiaggia,Ombrellone *ombrellone);
+void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20]);
 void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
 void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
 
