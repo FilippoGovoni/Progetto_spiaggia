@@ -1,17 +1,24 @@
-#include<stdio.h>	//printf
-#include<string.h>	//strlen
-#include<sys/socket.h>	//socket
-#include<arpa/inet.h>	//inet_addr
+#include<stdio.h>	
+#include<stdlib.h>
+#include<string.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
 #include<unistd.h>
+#include<signal.h>
 
 
-int main(void)
+
+int main(int argc, char **argv)
 {
 	int sock,s_lengt,lunghezza_messaggio;
-	int i=0,j;
+	int i=0,j,t;
 	struct sockaddr_in server;
 	char message[100][1000];
-	
+	if(argc== 1 || argc==4 || argc==5)
+	{
+		printf("Numero di argomenti incorretto\n");
+		exit(-1);
+	}
 	sock = socket(AF_INET , SOCK_STREAM , 0);
 	if (sock == -1)
 	{
@@ -29,7 +36,46 @@ int main(void)
 		return 1;
 	}
 	puts("Connesso\n");
+	strcpy(message[i],argv[1]);
+	if((strcmp(message[i],"AVAILABLE")==0)&&  argc==2 )
+	{
+		t=strlen(message[i]);
+		message[i][t]=' ';
+		strcat(message[i],"0");
+	}
+	if(argc==3)
+	{
+		t=strlen(message[i]);
+		message[i][t]=' ';
+		strcat(message[i],argv[2]);
+	}
+	
+		if( send(sock , message[i], strlen(message[i]) , 0) < 0)
+		{
+			puts("invio messaggio fallito");
+			return 1;
+		}
 
+		if( recv(sock , message[i] , 2000 , 0) < 0)
+		{
+			puts("ricezione messaggio fallita");
+			exit(-3);
+		}
+		lunghezza_messaggio=strlen(message[i]);
+		if(message[i][lunghezza_messaggio-5]=='\n' && message[i][lunghezza_messaggio-4]=='F')
+		{
+			printf("Server: ");
+			for(j=0;j<(lunghezza_messaggio-4);j++)
+			{
+				printf("%c",message[i][j]);
+			}
+			exit(-4);
+		}
+		else
+		{
+			printf("Server: %s \n",message[i]);
+		}
+		i++;
 	while(1)
 	{
 		printf("Inserisci richiesta : ");

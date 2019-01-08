@@ -118,7 +118,6 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                                                 strcat(client_message[i],Codice);
                                                 strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
-                                                //rewind(modifiche);
                                                 fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 											    
 											    write(client_sock ,client_message[i], strlen(client_message[i]));
@@ -151,7 +150,6 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                                                 strcat(client_message[i],Codice);
                                                 strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
-                                                //rewind(modifiche);
                                                 fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 										
 		                    				    write(client_sock , client_message[i],strlen(client_message[i]));
@@ -218,11 +216,11 @@ void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
             printf("errore apertura file\n");
             exit(-1);
         }
-    for(t=0;t<2;t++)
-        {
-            A[t]= richiesta[t+7];
+        for(t=0;t<2;t++)
+            {
+                A[t]= richiesta[t+7];
                     
-        }
+            }
         numero_richiesta=atoi(A);
         numero_richiesta--;
         if(ombrellone[numero_richiesta].stato==0 || ombrellone[numero_richiesta].stato==2 )
@@ -241,8 +239,14 @@ void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                 if((strcmp(ombrellone[numero_richiesta].codice,cod))==0)
                 {
                     ombrellone[numero_richiesta].stato=0;
-                    write(client_sock ,"CANCEL OK\nFINE",15);
+                    strcpy(ombrellone[numero_richiesta].codice,"00000");
+                    strcpy(ombrellone[numero_richiesta].datainizio,"00/00/0000");
+                    strcpy(ombrellone[numero_richiesta].datafine,"00/00/0000");
+
                     fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
+
+                    write(client_sock ,"CANCEL OK\nFINE",15);
+                
                 }
                 else
                 {
@@ -251,6 +255,7 @@ void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                     
                 }
         }
+        fclose(modifiche);
 
 }
 
@@ -264,7 +269,7 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
     char client_message[100][2000];
     int ombr_disponibili[10]={0};
 
-    if(richiesta[9]=='\n' || richiesta[10]=='\n'|| richiesta[11]==32)
+    if(richiesta[10]== '0')
             {
                 for(t=0;t<90;t++)
                 {

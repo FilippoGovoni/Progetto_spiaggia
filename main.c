@@ -1,10 +1,12 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>	//strlen
+#include<string.h>	
 #include<sys/socket.h>
-#include<arpa/inet.h>	//inet_addr
-#include<unistd.h>	//write
+#include<arpa/inet.h>	
+#include<unistd.h>	
+#include<signal.h>
 #include<time.h>
+#include<sys/types.h>
 #include<pthread.h>
 #include"funzioni.h"
 
@@ -22,7 +24,7 @@ void *filewriter(void*);
 int main(void)
 {
 	int socket_desc,client_sock,c;
-    int i=0,j,t=0;
+    int i=0,j,t=0,pid;
 	struct sockaddr_in server , client;
     FILE* statospiaggia;
 	char client_message[100][2000];
@@ -33,7 +35,6 @@ int main(void)
     srand((unsigned) time(&temp));
 
     //lettura dati iniziali spiggia
-
     if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
     {
         printf("errore apertura file\n");
@@ -104,7 +105,7 @@ int main(void)
 	//accept
 	while(client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))
     {
-       puts("Connessione OK");
+       printf("Connessione aperta con %d\n",client_sock);
        dato.sock=client_sock;
        if(pthread_create(&cliente,NULL,gestore_client,(void*)&dato)<0)
        {
@@ -113,7 +114,9 @@ int main(void)
        }
 
     }
-	close(socket_desc);
+	close(socket_desc);  
+    
+
 	return 0;
 }
 
@@ -139,7 +142,7 @@ void *gestore_client(void *dato)
     
     //Inizio conversazione
 	if( (read_size = recv(dati.sock,client_message[i],2000,0))>0)
-	{   
+	{ 
         //controllo sulla richiesta del client
         for(j=0;j<4;j++)
         {
@@ -212,7 +215,7 @@ void *filewriter(void *dato)
     }
     while(1)
     {
-        sleep(45);
+        sleep(30);
         if((modifiche=fopen("aggiornamenti.txt","r"))==NULL)
         {
             printf("errore apertura file\n");
