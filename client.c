@@ -36,6 +36,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	puts("Connesso\n");
+	if( recv(sock , message[i] , 2000 , 0) < 0)
+		{
+			puts("ricezione messaggio fallita");
+			exit(-3);
+		}
+		printf("%s \n",message[i]);
+		i++;
+		
 	strcpy(message[i],argv[1]);
 	if((strcmp(message[i],"AVAILABLE")==0)&&  argc==2 )
 	{

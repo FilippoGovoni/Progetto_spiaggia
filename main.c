@@ -8,18 +8,20 @@
 #include<time.h>
 #include<sys/types.h>
 #include<pthread.h>
+#include<semaphore.h>
 #include"funzioni.h"
 
 pthread_t writer;
 pthread_t cliente;
-pthread_mutex_t semaphore;
+sem_t mutex;
 
 void *gestore_client(void*);
 void *filewriter(void*);
 
-#define Numero_Ombrelloni 90
-#define Numero_righe 9
-#define Numero_colonne 10
+//Numero_Ombrelloni 90
+//Numero_righe 9
+//Numero_colonne 10
+int cont_thread=0;
 
 int main(void)
 {
@@ -30,6 +32,8 @@ int main(void)
 	char client_message[100][2000];
     char data_inizio[20]={0};
     parametri dato;
+    sem_init(&mutex,0,1);
+    
     time_t temp;
 
     srand((unsigned) time(&temp));
@@ -107,6 +111,7 @@ int main(void)
     {
        printf("Connessione aperta con %d\n",client_sock);
        dato.sock=client_sock;
+       cont_thread++;
        if(pthread_create(&cliente,NULL,gestore_client,(void*)&dato)<0)
        {
            perror("errore creazione thread");
@@ -139,7 +144,15 @@ void *gestore_client(void *dato)
         fscanf(statospiaggia,"%d %d %d %s %s %s",&dati.ombrellone[i].numero,&dati.ombrellone[i].riga,&dati.ombrellone[i].stato,dati.ombrellone[i].codice,dati.ombrellone[i].datainizio,dati.ombrellone[i].datafine);
         i++;
     }
-    
+    if(cont_thread==1)
+    {
+        write(dati.sock ,"Server disponibile\n",20);
+    }
+    else
+    {
+        write(dati.sock ,"In attesa della disponibilità del server...\n",46);
+    }
+    sem_wait(&mutex);
     //Inizio conversazione
 	if( (read_size = recv(dati.sock,client_message[i],2000,0))>0)
 	{ 
@@ -193,6 +206,7 @@ void *gestore_client(void *dato)
 	{
 		perror("ricezione fallita");
 	}
+    sem_post(&mutex);
     if(close(dati.sock)<0)
     perror("errore chiusura socket\n");
 

@@ -5,6 +5,9 @@
 #include<arpa/inet.h>	//inet_addr
 #include<unistd.h>	//write
 #include<time.h>
+#include<signal.h>
+#include<semaphore.h>
+#include<pthread.h>
 #include"funzioni.h"
 
 
@@ -192,7 +195,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                    	
 		            write(client_sock ,"NOK\nFINE", 9);
                     strcpy(client_message[i], "");
-                    	//inserire ciclo con semaforo
+                    	
                 } 
         }	
         else
