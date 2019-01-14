@@ -30,7 +30,6 @@ typedef struct
 {
     char Data[20];
     int sock;
-    Ombrellone ombrellone[90];
 }parametri;
 
 void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20]);

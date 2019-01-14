@@ -1,9 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<string.h>	//strlen
+#include<string.h>
 #include<sys/socket.h>
-#include<arpa/inet.h>	//inet_addr
-#include<unistd.h>	//write
+#include<arpa/inet.h>
+#include<unistd.h>	
 #include<time.h>
 #include<signal.h>
 #include<semaphore.h>
@@ -19,7 +19,7 @@ int generaNumeri()
 void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
 {
     char A[2];
-    int i=0,j,z=0,t=0,flag=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
+    int i=0,j,z=0,t=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
     FILE* modifiche;
     if((modifiche=fopen("aggiornamenti.txt","a"))==NULL)
         {
@@ -41,10 +41,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                 }
             if(conta_liberi>0)//conta ombrelloni liberi
             {
-               if(flag==0)//inserire semaforo per la sincronizzazione dei thread
-                {
-                    flag=1;
-				    strcpy(client_message[i],"Prenotazione disponibile\0");
+                strcpy(client_message[i],"Prenotazione disponibile\0");
 		            write(client_sock , client_message[i], strlen(client_message[i]));
 					strcpy(client_message[i]," ");
                     i++;
@@ -66,7 +63,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                             numero_richiesta--;
 							strcpy(client_message[i]," ");
                             i++;
-                        	if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>=-0 && numero_richiesta <=90) //if(ombrellone[numero_richiesta].stato==0)
+                            if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>=-0 && numero_richiesta <=90)
                         	{
                             	ombrellone[numero_richiesta].stato=2;//ombrellone temporaneamente occupato
                             	strcpy(client_message[i],"AVAILABLE\0");
@@ -189,14 +186,14 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                            	strcpy(client_message[i], " ");
 						}
 					}
-				}
-                else
+				
+                /*else
                 {
                    	
 		            write(client_sock ,"NOK\nFINE", 9);
                     strcpy(client_message[i], "");
                     	
-                } 
+                } */
         }	
         else
         {
