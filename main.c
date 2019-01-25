@@ -17,11 +17,14 @@
 
 pthread_t writer;
 pthread_t cliente;
+pthread_mutex_t mutex;
 
 void *gestore_client(void*);
 void *filewriter(void*);
 
-Ombrellone ombrellone[90];
+Ombrellone ombrellone[91];
+Periodo ausilio[91]; 
+    
 
 int main(void)
 {
@@ -33,6 +36,9 @@ int main(void)
 	char client_message[100][2000];
     char data_inizio[20]={0};
     parametri dato;
+    Periodo prenotazione; prenotazione.next=NULL;
+    ausilio[91]={0};
+    ausilio[0].next=NULL;   
     
     time_t temp;
 
@@ -51,7 +57,16 @@ int main(void)
         }
     while(!feof(statospiaggia))
     {
-        fscanf(statospiaggia,"%d %d %d %s %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].codice,ombrellone[i].datainizio,ombrellone[i].datafine);
+        ombrellone[i].tempo=(Periodo *)malloc(sizeof(Periodo));
+        fscanf(statospiaggia,"%d %d %d %s %d-%d-%d %d-%d-%d",&ombrellone[i].numero,&ombrellone[i].fila,&ombrellone[i].stato,ombrellone[i].codice,&ombrellone[i].tempo->datainizio.giorno,&ombrellone[i].tempo->datainizio.mese,&ombrellone[i].tempo->datainizio.anno,&ombrellone[i].tempo->datafine.giorno,&ombrellone[i].tempo->datafine.mese,&ombrellone[i].tempo->datafine.anno);
+        ombrellone[i].tempo->next=NULL; ausilio[i].next=NULL;
+        while((fgetc(statospiaggia)!='\n') && (i<91) ){
+            ombrellone[i].tempo->next=(Periodo *)malloc(sizeof(Periodo));
+            fscanf(statospiaggia,"%d-%d-%d %d-%d-%d",&ombrellone[i].tempo->next->datainizio.giorno,&ombrellone[i].tempo->next->datainizio.mese,&ombrellone[i].tempo->next->datainizio.anno,&ombrellone[i].tempo->next->datafine.giorno,&ombrellone[i].tempo->next->datafine.mese,&ombrellone[i].tempo->next->datafine.anno);
+            if(flag){ausilio[i]=*ombr[i].tempo;flag=0;}
+            ombrellone[i].tempo=ombrellone[i].tempo->next;
+        }
+        flag=1;
         i++;
     }
     printf("Inserisci la data di oggi\n");
@@ -185,7 +200,7 @@ void *gestore_client(void *dato)
         switch(controllo)
         {
             case 0://BOOK
-            func_BOOK(dati.sock,ombrellone,dati.Data);
+            func_BOOK(dati.sock,mutex,ombrellone,dati.Data);
             break;
             case 1://CANCEL
             func_CANCEL(dati.sock,client_message[i],ombrellone);
@@ -239,12 +254,12 @@ void *filewriter(void *dato)
             exit(-1);
         }
         while(!feof(statospiaggia))
-        {
+        {           //MODIFICA
             fscanf(statospiaggia,"%d %d %d %s %s %s",&ombrellone[i].numero,&ombrellone[i].riga,&ombrellone[i].stato,ombrellone[i].codice,ombrellone[i].datainizio,ombrellone[i].datafine);
             i++;
         }
         while(!feof(modifiche))
-        {
+        {           //MODIFICA
             fscanf(modifiche,"%d %d %d %s %s %s",&prova.numero,&prova.riga,&prova.stato,prova.codice,prova.datainizio,prova.datafine);
             for(i=0;i<90;i++)
             {
@@ -269,9 +284,25 @@ void *filewriter(void *dato)
         }
         fclose(modifiche);
         rewind(statospiaggia);
-        for(t=0;t<90;t++)
-        fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
-											    
+        //for(t=0;t<90;t++)
+        //fprintf(statospiaggia,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
+		
+        
+        for(t=1;t<91;t++){
+        if(ausilio[t].next!=NULL)
+                ombrellone[t].tempo=&ausilio[t];
+        if(ombrellone[t].tempo->next==NULL){
+            fprintf(statospiaggia,"%d %d %d %s %d-%d-%d %d-%d-%d\n",ombrellone[t].numero,ombrellone[t].fila,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].tempo->datainizio.giorno,ombrellone[t].tempo->datainizio.mese,ombrellone[t].tempo->datainizio.anno,ombrellone[t].tempo->datafine.giorno,ombrellone[t].tempo->datafine.mese,ombrellone[t].tempo->datafine.anno);
+        }else{
+            fprintf(statospiaggia,"%d %d %d %s %d-%d-%d %d-%d-%d",ombrellone[t].numero,ombrellone[t].fila,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].tempo->datainizio.giorno,ombrellone[t].tempo->datainizio.mese,ombrellone[t].tempo->datainizio.anno,ombrellone[t].tempo->datafine.giorno,ombrellone[t].tempo->datafine.mese,ombrellone[t].tempo->datafine.anno);
+            while(ombrellone[t].tempo->next!=NULL){
+                ombrellone[t].tempo=ombrellone[t].tempo->next;
+                fprintf(statospiaggia,"\t%d-%d-%d %d-%d-%d",ombrellone[t].tempo->datainizio.giorno,ombrellone[t].tempo->datainizio.mese,ombrellone[t].tempo->datainizio.anno,ombrellone[t].tempo->datafine.giorno,ombrellone[t].tempo->datafine.mese,ombrellone[t].tempo->datafine.anno);
+            }
+            fprintf(statospiaggia,"\n");
+        }
+    }
+
     }
 
     
