@@ -4,13 +4,6 @@ typedef struct{
     int anno;
 }Data;
 
-typedef struct{
-    int giorno;
-    int mese;
-    int anno;
-}Data;
-
-
 
 struct _periodo{
     Data datainizio;
@@ -18,7 +11,6 @@ struct _periodo{
     struct _periodo * next;
 };
 typedef struct _periodo Periodo;
-
 
 typedef struct{
     int numero;
@@ -30,12 +22,11 @@ typedef struct{
 
 typedef struct
 {
-    char Data[20];
+    char Data[20];      //DA MODIFICAREEEEE
     int sock;
 }parametri;
 
-void func_BOOK(int client_sock,pthread_mutex_t mutex,Ombrellone *ombrellone,char data_inizio[20],Periodo * ausilio);
+void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20]);
 void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
 void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
-Data StringToData(char *calenda);
 

@@ -22,8 +22,7 @@ pthread_mutex_t mutex;
 void *gestore_client(void*);
 void *filewriter(void*);
 
-Ombrellone ombrellone[91];
-Periodo ausilio[91]; 
+Ombrellone ombrellone[91]; 
     
 
 int main(void)
@@ -36,10 +35,14 @@ int main(void)
 	char client_message[100][2000];
     char data_inizio[20]={0};
     parametri dato;
-    Periodo prenotazione; prenotazione.next=NULL;
-    ausilio[91]={0};
-    ausilio[0].next=NULL;   
-    
+
+    //
+    Data dataoggi;
+    int confronto;
+    Periodo * prenotazione;
+    Periodo * ausilio[91];   
+    //
+
     time_t temp;
 
     srand((unsigned) time(&temp));
@@ -55,38 +58,41 @@ int main(void)
             printf("errore apertura file\n");
             exit(-1);
         }
-    while(!feof(statospiaggia))
-    {
+    while(!feof(statospiaggia)){
         ombrellone[i].tempo=(Periodo *)malloc(sizeof(Periodo));
-        fscanf(statospiaggia,"%d %d %d %s %d-%d-%d %d-%d-%d",&ombrellone[i].numero,&ombrellone[i].fila,&ombrellone[i].stato,ombrellone[i].codice,&ombrellone[i].tempo->datainizio.giorno,&ombrellone[i].tempo->datainizio.mese,&ombrellone[i].tempo->datainizio.anno,&ombrellone[i].tempo->datafine.giorno,&ombrellone[i].tempo->datafine.mese,&ombrellone[i].tempo->datafine.anno);
-        ombrellone[i].tempo->next=NULL; ausilio[i].next=NULL;
-        while((fgetc(statospiaggia)!='\n') && (i<91) ){
-            ombrellone[i].tempo->next=(Periodo *)malloc(sizeof(Periodo));
-            fscanf(statospiaggia,"%d-%d-%d %d-%d-%d",&ombrellone[i].tempo->next->datainizio.giorno,&ombrellone[i].tempo->next->datainizio.mese,&ombrellone[i].tempo->next->datainizio.anno,&ombrellone[i].tempo->next->datafine.giorno,&ombrellone[i].tempo->next->datafine.mese,&ombrellone[i].tempo->next->datafine.anno);
-            if(flag){ausilio[i]=*ombr[i].tempo;flag=0;}
-            ombrellone[i].tempo=ombrellone[i].tempo->next;
+        fscanf(statospiaggia,"%d %d %d %s %d-%d-%d %d-%d-%d",&ombrellone[i].numero,&ombrellone[i].fila,&ombrellone[i].stato,&ombrellone[i].codice,&ombrellone[i].tempo->datainizio.giorno,&ombrellone[i].tempo->datainizio.mese,&ombrellone[i].tempo->datainizio.anno,&ombrellone[i].tempo->datafine.giorno,&ombrellone[i].tempo->datafine.mese,&ombrellone[i].tempo->datafine.anno);
+        ausilio[i]=ombrellone[i].tempo;
+
+        while((fgetc(statospiaggia)!='\n') && (i<91)){
+            ausilio[i]->next=(Periodo *)malloc(sizeof(Periodo));
+            fscanf(statospiaggia,"%d-%d-%d %d-%d-%d",&ausilio[i]->next->datainizio.giorno,&ausilio[i]->next->datainizio.mese,&ausilio[i]->next->datainizio.anno,&ausilio[i]->next->datafine.giorno,&ausilio[i]->next->datafine.mese,&ausilio[i]->next->datafine.anno);
+            ausilio[i]=ausilio[i]->next;
         }
-        flag=1;
-        i++;
+       // ausilio[i]=ombrellone[i].tempo;      AUSILIO PUNTA ALL'ULTIMO ELEMENTO INSERITO NELLA RIGA
+       i++;
     }
+
+
+
     printf("Inserisci la data di oggi\n");
     fgets(data_inizio,15,stdin);
     t=strlen(data_inizio);
     data_inizio[t-1]='\0';
-    strcpy(dato.Data,data_inizio);
+    dataoggi=StringToData(data_inizio);
 
     //controllo stato ombrellone inizio
-    for(t=0;t<90;t++)
+    for(i=1;i<91;i++)
     {
-        if(strcmp(ombrellone[t].datainizio,data_inizio)==0)
+        if(ombrellone[i].tempo->datainizio==dataoggi)
         {
-            ombrellone[t].stato=1;
-            fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[t].numero,ombrellone[t].riga,ombrellone[t].stato,ombrellone[t].codice,ombrellone[t].datainizio,ombrellone[t].datafine);
+            ombrellone[i].stato=1;
+            fprintf(modifiche,"%d %d %d %s",ombrellone[i].numero,ombrellone[i].fila,ombrellone[i].stato,ombrellone[i].codice);
+            fprintf(statospiaggia,"\t%d-%d-%d %d-%d-%d",ombrellone[i].tempo->datainizio.giorno,ombrellone[i].tempo->datainizio.mese,ombrellone[i].tempo->datainizio.anno,ombrellone[i].tempo->datafine.giorno,ombrellone[i].tempo->datafine.mese,ombrellone[i].tempo->datafine.anno);
 			
         }
     }
      //controllo stato ombrellone fine
-    for(t=0;t<90;t++)
+    for(i=1;i<91;i++)
     {
         if(strcmp(ombrellone[t].datafine,data_inizio)==0)
         {
