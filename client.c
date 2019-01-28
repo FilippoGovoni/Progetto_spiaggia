@@ -6,14 +6,17 @@
 #include<unistd.h>
 #include<signal.h>
 
-
+int go=1;
+int sock;
+int flag=0;
 
 int main(int argc, char **argv)
 {
-	int sock,s_lengt,lunghezza_messaggio;
+	int s_lengt,lunghezza_messaggio;
 	int i=0,j,t,flag=0;
 	struct sockaddr_in server;
 	char message[100][1000];
+
 	if(argc== 1 || argc==4 || argc==5)
 	{
 		printf("Numero di argomenti incorretto\n");
@@ -56,35 +59,40 @@ int main(int argc, char **argv)
 			puts("invio messaggio fallito");
 			return 1;
 		}
-
+		i++;
 		if( recv(sock , message[i] , 2000 , 0) < 0)
 		{
 			puts("ricezione messaggio fallita");
-			exit(-3);
+			exit(3);
 		}
-		if(message[i][lunghezza_messaggio-5]=='\n' && message[i][lunghezza_messaggio-4]=='F')
+			lunghezza_messaggio=strlen(message[i]);
+			if(message[i][lunghezza_messaggio-5]=='\n' && message[i][lunghezza_messaggio-4]=='F')
 		{
+			flag++;
 			printf("Server: ");
 			for(j=0;j<(lunghezza_messaggio-4);j++)
 			{
 				printf("%c",message[i][j]);
 			}
-			exit(-4);
+			exit(4);
 		}
 		else
 		{
 			printf("Server: %s \n",message[i]);
 		}
 		i++;
-	while(1)
+	while(go)
 	{
-		
-		printf("Inserisci richiesta : ");
-		fgets(message[i],40,stdin);
+		if(flag==0)
+		{
+			printf("Inserisci richiesta : ");
+			fgets(message[i],40,stdin);
 		if( send(sock , message[i], strlen(message[i]) , 0) < 0)
 		{
 			puts("invio messaggio fallito");
 			return 1;
+		}
+
 		}
 
 		if( recv(sock , message[i] , 2000 , 0) < 0)
@@ -92,9 +100,10 @@ int main(int argc, char **argv)
 			puts("ricezione messaggio fallita");
 			break;
 		}
-		lunghezza_messaggio=strlen(message[i]);
+			lunghezza_messaggio=strlen(message[i]);
 			if(message[i][lunghezza_messaggio-5]=='\n' && message[i][lunghezza_messaggio-4]=='F')
 		{
+			flag++;
 			printf("Server: ");
 			for(j=0;j<(lunghezza_messaggio-4);j++)
 			{
@@ -108,7 +117,8 @@ int main(int argc, char **argv)
 		}
 		i++;
 	}
-	
-	close(sock);
 	return 0;
 }
+
+
+

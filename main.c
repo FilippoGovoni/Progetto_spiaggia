@@ -17,6 +17,8 @@
 
 pthread_t writer;
 pthread_t cliente;
+pthread_mutex_t mutex;
+
 
 void *gestore_client(void*);
 void *filewriter(void*);
@@ -146,6 +148,7 @@ void *gestore_client(void *dato)
     char CANCEL[7]={0};
     char AVAILABLE[10]={0};
     char client_message[100][2000];
+
     if((statospiaggia=fopen("stato_spiaggia.txt","r+"))==NULL)
     {
         printf("errore apertura file\n");
@@ -185,7 +188,7 @@ void *gestore_client(void *dato)
         switch(controllo)
         {
             case 0://BOOK
-            func_BOOK(dati.sock,ombrellone,dati.Data);
+            func_BOOK(dati.sock,mutex,ombrellone,dati.Data);
             break;
             case 1://CANCEL
             func_CANCEL(dati.sock,client_message[i],ombrellone);
@@ -199,12 +202,7 @@ void *gestore_client(void *dato)
 			
             break;
         }
-    }  
-        if(read_size == 0)
-	{
-		puts("Il client si è disconnesso");
-		fflush(stdout);
-	}
+    }
 	else if(read_size == -1)
 	{
 		perror("ricezione fallita");

@@ -1,19 +1,4 @@
-typedef struct
-{
-    char giornoinizio[2];
-    int gi;
-    char meseinizio[2];
-    int mi;
-    char annoinizio[4];
-    int ai;
-    char giornofine[2];
-    int gf;
-    char mesefine[2];
-    int mf;
-    char annofine[4];
-    int af;
 
-}periodo;
 
 typedef struct
 {
@@ -32,7 +17,8 @@ typedef struct
     int sock;
 }parametri;
 
-void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20]);
+
+void func_BOOK(int client_sock,pthread_mutex_t mutex,Ombrellone *ombrellone,char data_inizio[20]);
 void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
 void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
 

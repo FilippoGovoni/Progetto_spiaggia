@@ -16,10 +16,11 @@ int generaNumeri()
     return rand() % 10;
 }
 
-void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
+void func_BOOK(int client_sock,pthread_mutex_t mutex,Ombrellone *ombrellone,char data_inizio[20])
 {
     char A[2];
     int i=0,j,z=0,t=0,conta_liberi,read_size,codnum,numero_richiesta,numero_richiesta1;
+    int limit;
     FILE* modifiche;
     if((modifiche=fopen("aggiornamenti.txt","a"))==NULL)
         {
@@ -63,10 +64,12 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                             numero_richiesta--;
 							strcpy(client_message[i]," ");
                             i++;
+                            pthread_mutex_lock(&mutex);
                             if(ombrellone[numero_richiesta].stato==0 && numero_richiesta>=-0 && numero_richiesta <=90)
                         	{
                             	ombrellone[numero_richiesta].stato=2;//ombrellone temporaneamente occupato
-                            	strcpy(client_message[i],"AVAILABLE\0");
+                            	pthread_mutex_unlock(&mutex);
+                                strcpy(client_message[i],"AVAILABLE\0");
 		                    	write(client_sock , client_message[i], strlen(client_message[i]));
 								i++;	
                             	if((read_size = recv(client_sock , client_message[i] , 2000 , 0))>0)
@@ -93,9 +96,19 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                                         numero_richiesta1--;
 										if(numero_richiesta==numero_richiesta1)
 										{
-                                            if(client_message[i][17]=='\n' || client_message[i][18]=='\n')
+                                            for(j=17;j<25;j++)
                                             {
-                                                for(j=8;j<=18;j++)
+                                                if(client_message[i][j]=='\n')
+                                                limit=1;
+                                            }
+                                            if(limit)
+                                            {
+                                                j=7;
+                                                while(client_message[i][j]==32)
+                                                j++;
+
+                                                limit=j+10;
+                                                for(j;j<limit;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
@@ -121,17 +134,28 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                                                 fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 											    
 											    write(client_sock ,client_message[i], strlen(client_message[i]));
+                                                
                                                 i++;
                                             }
                                             else
                                             {
-                                                for(j=8;j<=17;j++)
+                                                j=7;
+                                                while(client_message[i][j]==32)
+                                                j++;
+                                            
+                                                limit=j+10;
+                                                for(j;j<limit;j++)
 											    {
 												    data_inizio[z]=client_message[i][j];
 												    z++;
 											    }
                                                 z=0;
-                                                for(j=19;j<=28;j++)
+
+                                                while(client_message[i][j]==32)
+                                                j++;
+                                                
+                                                limit=j+10;
+                                                for(j;j<limit;j++)
 											    {
 												    data_fine[z]=client_message[i][j];
 												    z++;
@@ -147,12 +171,14 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
                                                 }
                                                 strcpy(ombrellone[numero_richiesta].codice,Codice);
                                                 strcpy(client_message[i],"Prenotazione avvenuta con successo\n il tuo codice di cancellazione è:  ");
+                                                
                                                 strcat(client_message[i],Codice);
                                                 strcat(client_message[i],"\nFINE");
                                                 //scrittura a file momentanea
                                                 fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 										
 		                    				    write(client_sock , client_message[i],strlen(client_message[i]));
+                                                
                                             }
 											
 										}
@@ -160,7 +186,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
 										{
 											
 		                    				write(client_sock ,"Hai selezionato un ombrellone diverso\nFINE",43);
-                           					strcpy(client_message[i], " ");
+                                            
 										
 										}
 									}
@@ -168,22 +194,22 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
 									{
 										ombrellone[numero_richiesta].stato=0; //ombrellone libero
 		                    			write(client_sock ,"Prenotazione cancellata\nFINE", 29);
-                           				strcpy(client_message[i], " ");
+                                        
 									}
                         		}
 							}
                         	else
                        		{
-    
+                                pthread_mutex_unlock(&mutex);
 		                    	write(client_sock ,"NAVAILABLE\nFINE", 16);
-                           		strcpy(client_message[i], " ");
+                                
                        		}	
                     	}
 						else
 						{
 					
 		                    write(client_sock ,"Inserisci BOOK e il numero dell'ombrellone che vuoi prenotare\nFINE", 67);
-                           	strcpy(client_message[i], " ");
+                           	
 						}
 					}
 				
@@ -199,6 +225,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20])
         {
             
 		    write(client_sock ,"NAVAILABLE\nFINE",16);
+            
             
         }
     fclose(modifiche);
@@ -246,11 +273,13 @@ void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                     fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
 
                     write(client_sock ,"CANCEL OK\nFINE",15);
+                    
                 
                 }
                 else
                 {
                     write(client_sock ,"Codice errato\nFINE",19);
+                    
                 }
                     
                 }
@@ -286,14 +315,16 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
 					strcat(client_message[i],Liberi);
 					strcat(client_message[i],"\nFINE");
                     write(client_sock , client_message[i], strlen(client_message[i]));
-                    strcpy(client_message[i], " ");
+                    
+                    
 			        i++;
                 }
                 else
                 {
                     
 		            write(client_sock ,"NAVAILABLE\nFINE",16);
-                    strcpy(client_message[i], " ");
+                    
+                   
 			        
                 }
             }
@@ -328,14 +359,14 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
                     strcat(client_message[i],Liberi);
 					strcat(client_message[i],"\nFINE");
 		            write(client_sock , client_message[i], strlen(client_message[i]));
-                    strcpy(client_message[i], " ");
+                    
 			       
                 }
                 else
                 {
                     
 		            write(client_sock ,"La fila selezionata non esiste\nFINE",36);
-                    strcpy(client_message[i], " ");
+                    
 			        
                 }
     
@@ -343,64 +374,3 @@ void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone)
 
 }
 
-int confrontaDate(char datain1[],char datafin1[],char datain2[],char datafin2[])
-{
-    int i=0,z=0;
-    periodo A,B;
-    int ANNO,MESE,GIORNO;
-    for(i=0;i<2;i++)
-    {
-        A.giornoinizio[z]=datain1[i];
-        A.giornofine[z]=datafin1[i];
-        B.giornoinizio[z]=datain2[i];
-        B.giornofine[z]=datafin2[i];
-        z++;
-    }
-    z=0;
-    for(i=3;i<5;i++)
-    {
-        A.meseinizio[z]=datain1[i];
-        A.mesefine[z]=datafin1[i];
-        B.meseinizio[z]=datain2[i];
-        B.mesefine[z]=datafin2[i];
-        z++;
-    }
-    z=0;
-    for(i=7;i<=10;i++)
-    {
-        A.annoinizio[z]=datain1[i];
-        A.annofine[z]=datafin1[i];
-        B.annoinizio[z]=datain2[i];
-        B.annofine[z]=datafin2[i];
-        z++;
-    }
-    A.ai=atoi(A.annoinizio);
-    A.af=atoi(A.annofine);
-    B.ai=atoi(B.annoinizio);
-    B.af=atoi(B.annofine);
-    A.mi=atoi(A.meseinizio);
-    A.mf=atoi(A.mesefine);
-    B.mi=atoi(B.meseinizio);
-    B.mf=atoi(B.mesefine);
-    A.gi=atoi(A.giornoinizio);
-    A.gf=atoi(A.giornofine);
-    B.gi=atoi(B.giornoinizio);
-    B.gf=atoi(B.giornofine);
-
-    if((B.ai>=A.ai && B.ai <= A.af) && (B.af>=A.ai && B.af<=A.af))
-    {
-        if((B.mi>=A.mi && B.mi<=A.mf) && (B.mf <=A.mf && B.mf>= A.mi))
-        {
-            if((B.gi>=A.gi && B.gi<=A.gf) && (B.gf<=A.gf && B.gf >=A.gi))
-            {
-                return 0;
-            }
-            else
-            return 1;
-        }
-        else
-        return 1;
-    }
-    else
-    return 1;   
-}
