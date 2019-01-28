@@ -14,17 +14,16 @@ int confrontaDate(Data,Data,Data,Data);
 int CodiceData(Data);
 Data StringToData(char *);
 
-int generaNumeri()
-{
+int generaNumeri(){
     return rand() % 10;
 }
 
 
-void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Periodo ** ausilio){
-    int i,conta_liberi=0,numero_richiesta,codnum;
+void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[SIZEMSG], Periodo ** ausilio){
+    int i,conta_liberi=0,numero_richiesta,numero_richiesta1,codnum;
     int read_size;
-    int confronto;
-    char client_message[30],A[2],data_fine[15];
+    int confronto,flag=0;
+    char client_message[SIZEMSG],A[2],data_fine[15];
     FILE* modifiche;
     Data DATAIN,DATAFIN;
     Periodo * prenotazione;
@@ -76,7 +75,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
                                     DATAIN=StringToData(data_inizio);
                                     DATAFIN=StringToData(data_fine);
                                 
-                                }else{                                                                  //SE SI INSERISCONO DATA DI INIZIO E DI FINE
+                                }else{                                                           //SE SI INSERISCONO DATA DI INIZIO E DI FINE
                                     for(i=0;i<10;i++)
                                         data_inizio[i]=client_message[i+8];
                                     for(i=0;i<10;i++)
@@ -90,23 +89,71 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
                                 prenotazione->datainizio=DATAIN;
                                 prenotazione->datafine=DATAFIN;
 
+                                if(CodiceData(ombrellone[numero_richiesta].tempo->datainizio)!=0){              //SE È GIÀ STATA EFFETTUATA ALMENO UNA PRENOTAZIONE SU QUELL'OMBRELLONE...
+                                    if(ombrellone[numero_richiesta].tempo->next!=NULL)
+                                        ausilio[numero_richiesta]=ombrellone[numero_richiesta].tempo;
+                                    
+                                    confronto=confrontaDate(prenotazione->datainizio,prenotazione->datafine,ausilio[numero_richiesta]->datainizio,ausilio[numero_richiesta]->datafine);
+                                    
+                                    
+                                    if(confronto==-1){          //NECESSARIO, UNICA VOLTA IN CUI SI MODIFICA L'OMBRELLONE E NON L'AUSILIO
+                                        prenotazione->next=ombrellone[numero_richiesta].tempo;
+                                        ombrellone[numero_richiesta].tempo=prenotazione;
+                                        flag=1;
+                                    }
 
 
-                                
+                                    if(confronto==0){
+                                        strcpy(client_message,"ombrellone non disp, già occupato m8\n");
+                                        free(prenotazione);
+                                    }
 
-                                //generazione codice di cancellazione
-                                for(i=0;i<5;i++)
-                                {
-                                    codnum=generaNumeri();
-                                    ombrellone[numero_richiesta].codice[i]=codnum+'0';
+                                    while(ausilio[numero_richiesta]->next!=NULL && confronto==1){
+                                        confronto=confrontaDate(prenotazione->datainizio,prenotazione->datafine,ausilio[numero_richiesta]->next->datainizio,ausilio[numero_richiesta]->next->datafine);
+                                        if(confronto==-1){
+                                            prenotazione->next=ausilio[numero_richiesta]->next;
+                                            ausilio[numero_richiesta]->next=prenotazione;
+                                            flag=1;
+                                            break;
+                                        }
+                                        if (confronto==0){
+                                            strcpy(client_message,"ombrellone non disponibile, già occupato\n");
+                                            free(prenotazione);
+                                            break;
+                                        }
+                                        ausilio[numero_richiesta]=ausilio[numero_richiesta]->next;
+                                    }
+                                    if(confronto==1){
+                                        ausilio[numero_richiesta]->next=prenotazione;
+                                        flag=1;
+                                    }
+                                }else{
+                                    ombrellone[numero_richiesta].tempo=prenotazione;
+                                    flag=1;
                                 }
-                                ombrellone[numero_richiesta].codice[6]='\0';    //Possibile errore!
-                                strcpy(client_message,"Prenot eseguita\n Codice canc: ");
-                                strcat(client_message,ombrellone[numero_richiesta].codice[6]);
-                                strcat(client_message[i],"\nFINE");
-                                //scrittura a file momentanea  DA MODIFICARE!!!
-                                fprintf(modifiche,"%d %d %d %s %s %s\n",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].riga,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice,ombrellone[numero_richiesta].datainizio,ombrellone[numero_richiesta].datafine);
-											    
+
+                                if(flag){
+                                    //generazione codice di cancellazione
+                                    for(i=0;i<5;i++){
+                                        codnum=generaNumeri();
+                                        ombrellone[numero_richiesta].codice[i]=codnum+'0';
+                                    }
+                                    ombrellone[numero_richiesta].codice[6]='\0';    //Possibile errore!
+                                    strcpy(client_message,"Prenot eseguita\n Codice canc: ");
+                                    strcat(client_message,ombrellone[numero_richiesta].codice);
+                                    strcat(client_message,"\nFINE");
+                                
+                                    //scrittura a file momentanea 
+
+                                    fprintf(modifiche,"%d %d %d %s",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].fila,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice);
+                                    while(ombrellone[numero_richiesta].tempo!=NULL){
+                                        fprintf(modifiche,"\t%d/%d/%d %d/%d/%d",ombrellone[numero_richiesta].tempo->datainizio.giorno,ombrellone[numero_richiesta].tempo->datainizio.mese,ombrellone[numero_richiesta].tempo->datainizio.anno,ombrellone[numero_richiesta].tempo->datafine.giorno,ombrellone[numero_richiesta].tempo->datafine.mese,ombrellone[numero_richiesta].tempo->datafine.anno);
+                                        ombrellone[numero_richiesta].tempo=ombrellone[numero_richiesta].tempo->next;
+                                    }
+                                    fprintf(modifiche,"\n");
+
+                                }
+
 								write(client_sock ,client_message, strlen(client_message));
                                                 
 
@@ -114,7 +161,7 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
                                 write(client_sock ,"Hai selezionato un ombrellone diverso\nFINE",43);
                         
                         
-                        
+                        }
                         
                         if(strncmp(client_message,"CANCEL",6)==0){          //SE SI CAMBIA IDEA E NON SI PROCEDE CON LA PRENOTAZIONE...
                             ombrellone[numero_richiesta].stato=0;
@@ -122,9 +169,11 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
                         }
 
                     }
+                }else
+                {
+                    write(client_sock,"NAVAILABLE\nFINE",16);
                 }
-
-
+                
 
 
             }else{
@@ -136,8 +185,6 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
         }
 
 
-
-
     }else                   //SE NON CI SONO OMBRELLONI DISPONIBILI
         write(client_sock ,"NAVAILABLE\nFINE",16);
     
@@ -146,24 +193,73 @@ void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20], Peri
 
 }
 
-void func_CANCEL(int client_sock,char richiesta[15],Ombrellone *ombrellone){
-    /*code*/
+void func_CANCEL(int client_sock,char richiesta[SIZEMSG],Ombrellone *ombrellone){
+    
+    FILE *modifiche;
+    char client_message[SIZEMSG];
+    int numero_richiesta,read_size;
+    int i;
+    char A[2],cod[6];
+
+
+    if((modifiche=fopen("aggiornamenti.txt","a"))==NULL){
+        printf("errore apertura file\n");
+        exit(-1);
+    }
+    for(i=0;i<2;i++)
+        A[i]=richiesta[i+7];
+    numero_richiesta=atoi(A);
+
+    if(ombrellone[numero_richiesta].stato==0 || ombrellone[numero_richiesta].stato==2 )
+        write(client_sock ,"L'ombrellone non può essere disdetto\nFINE",43);
+    else{
+        write(client_sock ,"Inserisci il codice per disdire la prenotazione\n",49);
+        if((read_size = recv(client_sock , client_message , 6 , 0))>0){
+            for(i=0;i<5;i++)
+                cod[i]=client_message[i];
+            
+            if(strcmp(ombrellone[numero_richiesta].codice,cod)==0){         //SE IL CODICE DI CANCELLAZIONE È GIUSTO... (CYBER-SECURITY)
+                ombrellone[numero_richiesta].stato=0;
+                strcpy(ombrellone[numero_richiesta].codice,"00000");
+                ombrellone[numero_richiesta].tempo->datainizio.giorno=0;ombrellone[numero_richiesta].tempo->datainizio.mese=0;ombrellone[numero_richiesta].tempo->datainizio.anno=0;
+                ombrellone[numero_richiesta].tempo->datafine.giorno=0;ombrellone[numero_richiesta].tempo->datafine.mese=0;ombrellone[numero_richiesta].tempo->datafine.anno=0;
+
+                fprintf(modifiche,"%d %d %d %s",ombrellone[numero_richiesta].numero,ombrellone[numero_richiesta].fila,ombrellone[numero_richiesta].stato,ombrellone[numero_richiesta].codice);
+                while(ombrellone[numero_richiesta].tempo!=NULL){
+                    fprintf(modifiche,"\t%d/%d/%d %d/%d/%d",ombrellone[numero_richiesta].tempo->datainizio.giorno,ombrellone[numero_richiesta].tempo->datainizio.mese,ombrellone[numero_richiesta].tempo->datainizio.anno,ombrellone[numero_richiesta].tempo->datafine.giorno,ombrellone[numero_richiesta].tempo->datafine.mese,ombrellone[numero_richiesta].tempo->datafine.anno);
+                    ombrellone[numero_richiesta].tempo=ombrellone[numero_richiesta].tempo->next;
+                }
+                fprintf(modifiche,"\n");
+                write(client_sock ,"CANCEL OK\nFINE",15);
+                
+            }else                                                           //SE IL CODICE NON È QUELLO GIUSTO C'È UN HACKER 
+            {
+                write(client_sock ,"Codice errato\nFINE",19);
+            }
+            
+
+
+
+        }/*receive soket*/
+    }
+    fclose(modifiche);
 
 }
 
-void func_AVAILABLE(int client_sock,char richiesta[15],Ombrellone *ombrellone){
+void func_AVAILABLE(int client_sock,char richiesta[SIZEMSG],Ombrellone *ombrellone){
     int i,lenght,cifra=0;
-    char client_message[15];
+    char client_message[SIZEMSG];
     int ombr_disponibili=0,fila_ombr;
     char carat;
-    char A[2]=0
+    char A[2];
 
     if(richiesta[9]=='\0')          //SE È STATO INSERITO SOLO AVAILABLE SENZA SPECIFICHE
     {
         for(i=1;i<91;i++){
-            if(ombrellone[t].stato==0)
+            if(ombrellone[i].stato==0)
                 ombr_disponibili++;
         }
+
         if(ombr_disponibili>0){                     //SE CI SONO OMBR DISPONIBILI
             strcpy(client_message,"AVAILABLE ");
             lenght=strlen(client_message);
@@ -201,6 +297,7 @@ void func_AVAILABLE(int client_sock,char richiesta[15],Ombrellone *ombrellone){
         
         for(i=0;i<2;i++)
             A[i]= richiesta[i+10];
+
         fila_ombr=atoi(A);
 
         if(fila_ombr>0 && fila_ombr<10){
@@ -261,10 +358,12 @@ int CodiceData(Data data){
 Data StringToData(char * calenda){
     char A[4];int z=0,i=0;
     Data DATA;
+
     if(calenda[1]<48 || calenda[2]>57){
         calenda[1]=calenda[0];
         calenda[0]='0';
     }
+
     if (calenda[4]<48 || calenda[4]>57){
         calenda[4]=calenda[3];
         calenda[3]='0';
@@ -274,14 +373,18 @@ Data StringToData(char * calenda){
         A[i]=calenda[z];
         i++;
     }
+
     DATA.giorno=atoi(A);
     i=0;
+
     for(z=3;z<5;z++){
         A[i]=calenda[z];
         i++;
     }
+
     DATA.mese=atoi(A);
     i=0;
+
     for(z=6;z<10;z++){
         A[i]=calenda[z];
         i++;

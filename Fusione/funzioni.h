@@ -1,3 +1,4 @@
+#define SIZEMSG 60
 typedef struct{
     int giorno;
     int mese;
@@ -26,7 +27,7 @@ typedef struct
     int sock;
 }parametri;
 
-void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[20]);
-void func_CANCEL(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
-void func_AVAILABLE(int client_sock,char richiesta[2000],Ombrellone *ombrellone);
+void func_BOOK(int client_sock,Ombrellone *ombrellone,char data_inizio[SIZEMSG],Periodo ** ausilio);
+void func_CANCEL(int client_sock,char richiesta[SIZEMSG],Ombrellone *ombrellone);
+void func_AVAILABLE(int client_sock,char richiesta[SIZEMSG],Ombrellone *ombrellone);
 

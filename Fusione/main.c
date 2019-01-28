@@ -11,17 +11,23 @@
 #include<semaphore.h>
 #include"funzioni.h"
 
+
+pthread_t writer;
+pthread_t cliente;
+
+
 Ombrellone ombrellone[91];
+Periodo * ausilio[91];
 
 void *gestore_client(void*);
 void *filewriter(void*);
 
 int main(){
     int socket_desc,client_sock,c;
-    int i=0,j,t=0,pid;
+    int i=1,j,t=0,pid;
     struct sockaddr_in server , client;
     FILE* statospiaggia;
-	Periodo * ausilio[91];
+
 	parametri dato;
     
 
@@ -40,6 +46,7 @@ int main(){
         ausilio[i]=ombrellone[i].tempo;
 
         while((fgetc(statospiaggia)!='\n') && (i<91)){
+            printf("ciclo infinito %d \n", i);
             ausilio[i]->next=(Periodo *)malloc(sizeof(Periodo));
             fscanf(statospiaggia,"%d/%d/%d %d/%d/%d",&ausilio[i]->next->datainizio.giorno,&ausilio[i]->next->datainizio.mese,&ausilio[i]->next->datainizio.anno,&ausilio[i]->next->datafine.giorno,&ausilio[i]->next->datafine.mese,&ausilio[i]->next->datafine.anno);
             ausilio[i]=ausilio[i]->next;
@@ -104,7 +111,7 @@ int main(){
 
 void *gestore_client(void *dato){
     parametri dati= *(parametri*)dato;
-    int lenght,controllo;
+    int lenght,controllo,read_size;
 	char client_message[15];
 
 	//Inizio conversazione
@@ -121,7 +128,7 @@ void *gestore_client(void *dato){
             controllo=2;
         switch(controllo){
             case 0://BOOK
-            func_BOOK(dati.sock,ombrellone,dati.Data);
+            func_BOOK(dati.sock,ombrellone,dati.Data,ausilio);
             break;
             case 1://CANCEL
             func_CANCEL(dati.sock,client_message,ombrellone);
@@ -186,6 +193,7 @@ void *filewriter(void *dato){	//gli si potrebbe passare statospiaggia come param
             ombrellone[i].tempo=ombrellone[i].tempo->next;
         }
         fprintf(statospiaggia,"\n");
+        }
 	}
 
 
